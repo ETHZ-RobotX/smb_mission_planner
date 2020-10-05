@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python2
 
 import math
 import rospy
@@ -9,11 +9,19 @@ import smach_ros
 from geometry_msgs.msg import PoseStamped
 import mission_plan
 
-class MissionPlanner():
-    def __init__(self, yaml_file_path):
-        self.yaml_file_path = yaml_file_path
 
+class MissionPlanner():
+    def __init__(self, yaml_file_path, goal_topic_name, base_pose_topic_name):
+        # Read missions data.
+        self.yaml_file_path = yaml_file_path
         self.readMissionsData()
+
+        # Set topic names to be easily used in mission definitions.
+        global goal_topic_name_global
+        global base_pose_topic_name_global
+        goal_topic_name_global = goal_topic_name
+        base_pose_topic_name_global = base_pose_topic_name
+
         self.main()
 
     def readMissionsData(self):
@@ -22,9 +30,7 @@ class MissionPlanner():
 
     def main(self):
         rospy.init_node('mission_planner_node')
-        rospy.loginfo("Misison planner started.")
-
-        rospy.loginfo(self.missions_data)
+        rospy.loginfo("Mission planner started.")
 
         # Setup state machine.
         state_machine = mission_plan.createMissionPlan(self.missions_data)
@@ -39,22 +45,23 @@ class MissionPlanner():
 
         # Wait for ctrl-c to stop the application
         introspection_server.stop()
-        
+
 
 class Mission(smach.State):
     def __init__(self, mission_data):
         smach.State.__init__(self, outcomes=['Completed', 'Aborted', 'Next Goal'])
         self.mission_data = mission_data
         self.goal_idx = 0
-        self.pose_publisher = rospy.Publisher('/move_base_simple/goal', PoseStamped, queue_size=10)
-        self.pose_subscriber = rospy.Subscriber('/base_pose_measured', PoseStamped, self.poseCallback)
+
+        self.pose_publisher = rospy.Publisher(goal_topic_name_global, PoseStamped, queue_size=10)
+        self.pose_subscriber = rospy.Subscriber(base_pose_topic_name_global, PoseStamped, self.poseCallback)
 
         self.distance_to_goal_tolerance_m = 0.3
         self.angle_to_goal_tolerance_rad = 0.7
 
     def execute(self, userdata):
         if(self.goal_idx >= len(self.mission_data.keys())):
-            rospy.loginfo("No more goals left in this mission.")
+            rospy.loginfo("No more goals left in current mission.")
             self.goal_idx = 0
             return 'Completed'
 
@@ -67,20 +74,20 @@ class Mission(smach.State):
         countdown_s = 4
         while countdown_s:
             if(self.reachedGoalWithTolerance()):
-                rospy.loginfo("Goal reached before countdown ended. Loading next goal...")
+                rospy.loginfo("Goal '" + current_goal_name + "' reached before countdown ended. Loading next goal...")
                 self.goal_idx += 1
                 return 'Next Goal'
             else:
-                rospy.loginfo(str(countdown_s) + "s left until skipping current goal.")
+                rospy.loginfo(str(countdown_s) + "s left until skipping goal '" + current_goal_name + "'.")
                 rospy.sleep(1)
             countdown_s -= 1
-        rospy.logwarn("Countdown ended without reaching current goal.")
+        rospy.logwarn("Countdown ended without reaching goal '" + current_goal_name + "'.")
         if(self.goal_idx == 0):
-            rospy.logwarn("Starting goal of mission unreachable. Aborting mission...")
+            rospy.logwarn("Starting goal of mission unreachable. Aborting current mission.")
             self.goal_idx = 0.
             return 'Aborted'
         else:
-            rospy.logwarn("Skipping current goal...")
+            rospy.logwarn("Skipping goal '" + current_goal_name + "'.")
             self.goal_idx += 1
             return 'Next Goal'
 

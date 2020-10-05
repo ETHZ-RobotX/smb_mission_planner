@@ -1,3 +1,31 @@
+## General Info
+
+This repo adds mission planning functionality to the stack as follows:
+
+1. Record missions by using the `mission_recorder`
+2. Create compose your missions in the `mission_plan`
+3. Execute your missions by using the `mission_planner`
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 **Edit a file, create a new file, and clone from Bitbucket in under 2 minutes**
 
 When you're done, you can delete the content in this README and update the file with details for others getting started with your repository.

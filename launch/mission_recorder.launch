@@ -1,12 +1,13 @@
 <?xml version="1.0"?>
 <launch>
-  <arg name="config_file" default="$(find smb_mission_planner)/configs/example_config.yaml"/>
+  <arg name="config_file" default="$(find smb_mission_planner)/configs/my_config.yaml"/>
+  <arg name="goal_topic_name" default="/move_base_simple/goal"/>
 
   <node pkg="smb_mission_planner"
         type="mission_recorder_node.py"
         name="mission_recorder_node"
         output="screen"
-        args="$(arg config_file)">
+        args="$(arg config_file) $(arg goal_topic_name)">
   </node>
 
 </launch>
