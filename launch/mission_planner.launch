@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<launch>
+  <arg name="config_file" default="$(find smb_mission_planner)/configs/default_config.yaml"/>
+  <arg name="enable_viewer" default="false"/>
+
+  <node pkg="smb_mission_planner"
+        type="mission_planner_node.py"
+        name="mission_planner_node"
+        output="screen"
+        args="$(arg config_file)">
+  </node>
+
+  <group if="$(arg enable_viewer)">
+    <node pkg="smach_viewer"
+      type="smach_viewer.py"
+      name="smach_viewer_node"
+      output="screen"
+      args="">
+    </node>
+  </group>
+
+</launch>

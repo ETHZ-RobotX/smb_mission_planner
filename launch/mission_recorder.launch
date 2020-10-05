@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<launch>
+  <arg name="config_file" default="$(find smb_mission_planner)/configs/example_config.yaml"/>
+
+  <node pkg="smb_mission_planner"
+        type="mission_recorder_node.py"
+        name="mission_recorder_node"
+        output="screen"
+        args="$(arg config_file)">
+  </node>
+
+</launch>

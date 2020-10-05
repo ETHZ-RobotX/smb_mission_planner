@@ -1,0 +1,53 @@
+# This is an example file.
+---
+mission_1:
+  start:
+    x_m: 0.
+    y_m: 0.
+    yaw_rad: 0.
+  poi_1:
+    x_m: 0.
+    y_m: 4.
+    yaw_rad: 3.14
+  poi_2:
+    x_m: 2.
+    y_m: 4.
+    yaw_rad: 0.
+  end:
+    x_m: 3.
+    y_m: 4.
+    yaw_rad: 0.
+mission_2:
+  start:
+    x_m: 3.
+    y_m: 4.
+    yaw_rad: 0.
+  poi_1:
+    x_m: 5.
+    y_m: 7.
+    yaw_rad: 3.14
+  poi_2:
+    x_m: 5.
+    y_m: 8.
+    yaw_rad: 0.
+  end:
+    x_m: 9.
+    y_m: 10.
+    yaw_rad: 0.
+mission_3:
+  start:
+    x_m: 3.
+    y_m: 4.
+    yaw_rad: 0.
+  poi_1:
+    x_m: 6.
+    y_m: 2.
+    yaw_rad: 3.14
+  poi_2:
+    x_m: 7.
+    y_m: 2.
+    yaw_rad: 0.
+  end:
+    x_m: 1.
+    y_m: -2.
+    yaw_rad: 0.
