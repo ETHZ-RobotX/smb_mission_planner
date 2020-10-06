@@ -3,10 +3,119 @@
 This repo adds mission planning functionality to the stack as follows:
 
 1. Record missions by using the `mission_recorder`
-2. Create compose your missions in the `mission_plan`
+2. Create a plan for your missions in the `mission_plan`
 3. Execute your missions by using the `mission_planner`
 
 
+## Installation
+
+- Clone this repo into your workspace
+- Install `smach` from [here](http://wiki.ros.org/smach) (a state machine library for python)
+- Install `smach_ros` from [here](http://wiki.ros.org/smach_ros) (ROS compatibility for `smach`, e.g. for the viewer in rqt.)
+- Install `oyaml` with `pip install oyaml` (enables python2 compatibility with ordered dicts for yaml file dump)
+
+
+
+
+
+
+
+## Record missions
+
+As it is fairly tedious to input poses manually for the mission goals, the `mission_recorder` helps you out.
+It generates a `yaml` file with all the goal poses you recorded, grouped by mission.
+You can launch it with 
+```
+roslaunch smb_mission_planner mission_recorder.launch
+```
+which starts the node. 
+You then can give recording instructions with ros services. 
+To record a mission, call
+`rosservice call /record_mission {"mission_name","goal_1_name, goal_2_name, ..."}`
+where you can use your own `mission_name` and `goal_names`.
+The number of goals can be selected arbitrarily, just add more to the list.
+After you sent the `/record_mission` service, instructions will appear in the command window where you launched the node.
+You can now input the poses of the goals of the current mission one by one.
+This can be done 
+
+- in `rviz` by clicking `2D Nav Goal` and visually placing the pose on your map. 
+- by sending the desired pose in the topic `/move_base_simple/goal`.
+- in `rviz` by sending a goal with the `smb_path_planner` widget.
+
+After having recorded all your missions, stop the node with `Ctrl-C`. 
+All your recorded missions will be dumped to the `yaml` file.
+Of course, you can also *manually edit* the generated yaml file, to combine different recording sessions, add or edit goals manually, etc.
+
+### Advanced Features
+
+#### Delete Missions
+Delete missions while the node is running with
+```
+rosservice call /delete_mission "mission_name"
+```
+
+#### Delete Goals
+Delete missions while the node is running with
+```
+rosservice call /delete_goal {"mission_name","goal_name"}
+```
+
+#### Specify file for file dump
+You can use a `roslaunch` argument to specify a filepath for the output file, e.g.
+```
+roslaunch smb_mission_planner mission_recorder.launch yaml_file_path:~/smb_catkin_ws/src/smb_mission_planner/config/my_amazing_config.yaml
+```
+
+#### Prevent file dump
+Stop file dump with
+```
+rosservice call /toggle_file_dump "False"
+```
+or reenable it with "True"
+
+
+#### Choose your own input topic for recording
+You can use a `roslaunch` argument to specify the input topic for the recording
+```
+roslaunch smb_mission_planner mission_recorder.launch goal_pose_topic:=/move_base_simple/goal
+```
+
+
+
+
+
+## Mission planning
+
+You can combine your recorded missions to a mission plan by connecting them to each other in the `mission_plan.py` to specify a specific behaviour.
+The `mission_plan.py` should be modified by you to add more missions and connect them accordingly.
+Here, a `smach` state machine is built up.
+To learn more about it, visit the [tutorials](http://wiki.ros.org/smach/Tutorials).
+Make sure to assign to each mission its respective mission data, i.e. its recorded information of the yaml file.
+
+
+
+## Executing you mission plan
+
+
+
+
+## Where to go from here
+
+
+
+
+
+
+
+
+## Example tutorial
+
+
+
+## Common pitfalls
+
+- It is easy to forget to change the mission names in the `mission_plan.py` when recording new missions.
+- The rosservice call must be in the form `{"mission_name","goal_1_name, goal_2_name, ..."}` without a space after the separating comma.
 
 
 
@@ -16,58 +125,3 @@ This repo adds mission planning functionality to the stack as follows:
 
 
 
-
-
-
-
-
-
-
-
-
-
-**Edit a file, create a new file, and clone from Bitbucket in under 2 minutes**
-
-When you're done, you can delete the content in this README and update the file with details for others getting started with your repository.
-
-*We recommend that you open this README in another tab as you perform the tasks below. You can [watch our video](https://youtu.be/0ocf7u76WSo) for a full demo of all the steps in this tutorial. Open the video in a new tab to avoid leaving Bitbucket.*
-
----
-
-## Edit a file
-
-You’ll start by editing this README file to learn how to edit a file in Bitbucket.
-
-1. Click **Source** on the left side.
-2. Click the README.md link from the list of files.
-3. Click the **Edit** button.
-4. Delete the following text: *Delete this line to make a change to the README from Bitbucket.*
-5. After making your change, click **Commit** and then **Commit** again in the dialog. The commit page will open and you’ll see the change you just made.
-6. Go back to the **Source** page.
-
----
-
-## Create a file
-
-Next, you’ll add a new file to this repository.
-
-1. Click the **New file** button at the top of the **Source** page.
-2. Give the file a filename of **contributors.txt**.
-3. Enter your name in the empty file space.
-4. Click **Commit** and then **Commit** again in the dialog.
-5. Go back to the **Source** page.
-
-Before you move on, go ahead and explore the repository. You've already seen the **Source** page, but check out the **Commits**, **Branches**, and **Settings** pages.
-
----
-
-## Clone a repository
-
-Use these steps to clone from SourceTree, our client for using the repository command-line free. Cloning allows you to work on your files locally. If you don't yet have SourceTree, [download and install first](https://www.sourcetreeapp.com/). If you prefer to clone from the command line, see [Clone a repository](https://confluence.atlassian.com/x/4whODQ).
-
-1. You’ll see the clone button under the **Source** heading. Click that button.
-2. Now click **Check out in SourceTree**. You may need to create a SourceTree account or log in.
-3. When you see the **Clone New** dialog in SourceTree, update the destination path and name if you’d like to and then click **Clone**.
-4. Open the directory you just created to see your repository’s files.
-
-Now that you're more familiar with your Bitbucket repository, go ahead and add a new file locally. You can [push your change back to Bitbucket with SourceTree](https://confluence.atlassian.com/x/iqyBMg), or you can [add, commit,](https://confluence.atlassian.com/x/8QhODQ) and [push from the command line](https://confluence.atlassian.com/x/NQ0zDQ).
