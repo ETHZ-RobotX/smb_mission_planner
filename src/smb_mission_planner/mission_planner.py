@@ -53,9 +53,11 @@ class Mission(smach.State):
         self.mission_data = mission_data
         self.goal_idx = 0
 
-        self.pose_publisher = rospy.Publisher(goal_topic_name_global, PoseStamped, queue_size=10)
-        self.pose_subscriber = rospy.Subscriber(base_pose_topic_name_global, PoseStamped, self.poseCallback)
+        self.goal_pose_publisher = rospy.Publisher(goal_topic_name_global, PoseStamped, queue_size=10)
+        self.base_pose_subscriber = rospy.Subscriber(base_pose_topic_name_global, PoseStamped, self.basePoseCallback)
 
+        self.countdown_s = 60
+        self.countdown_decrement_s = 10
         self.distance_to_goal_tolerance_m = 0.3
         self.angle_to_goal_tolerance_rad = 0.7
 
@@ -71,7 +73,7 @@ class Mission(smach.State):
         self.setGoal(current_goal['x_m'], current_goal['y_m'], current_goal['yaw_rad'])
         rospy.loginfo("Goal set: '" + current_goal_name + "'.")
 
-        countdown_s = 4
+        countdown_s = self.countdown_s
         while countdown_s:
             if(self.reachedGoalWithTolerance()):
                 rospy.loginfo("Goal '" + current_goal_name + "' reached before countdown ended. Loading next goal...")
@@ -79,8 +81,8 @@ class Mission(smach.State):
                 return 'Next Goal'
             else:
                 rospy.loginfo(str(countdown_s) + "s left until skipping goal '" + current_goal_name + "'.")
-                rospy.sleep(1)
-            countdown_s -= 1
+                rospy.sleep(self.countdown_decrement_s)
+            countdown_s -= self.countdown_decrement_s
         rospy.logwarn("Countdown ended without reaching goal '" + current_goal_name + "'.")
         if(self.goal_idx == 0):
             rospy.logwarn("Starting goal of mission unreachable. Aborting current mission.")
@@ -106,13 +108,13 @@ class Mission(smach.State):
         pose_stamped_msg.pose.orientation.y = quaternion[1]
         pose_stamped_msg.pose.orientation.z = quaternion[2]
         pose_stamped_msg.pose.orientation.w = quaternion[3]
-        self.pose_publisher.publish(pose_stamped_msg)
+        self.goal_pose_publisher.publish(pose_stamped_msg)
 
         self.goal_x_m = x_m
         self.goal_y_m = y_m
         self.goal_yaw_rad = yaw_rad
 
-    def poseCallback(self, pose_stamped_msg):
+    def basePoseCallback(self, pose_stamped_msg):
         rospy.loginfo_once("Estimated base pose received.")
 
         x_m = pose_stamped_msg.pose.position.x
