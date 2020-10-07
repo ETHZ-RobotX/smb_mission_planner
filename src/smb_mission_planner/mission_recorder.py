@@ -5,98 +5,108 @@ import collections
 import oyaml as yaml
 import tf
 from geometry_msgs.msg import PoseStamped
-from smb_mission_planner.srv import AddMission, AddMissionResponse
-from smb_mission_planner.srv import DeleteMission, DeleteMissionResponse
-from smb_mission_planner.srv import DeleteGoal, DeleteGoalResponse
+from smb_mission_planner.srv import RecordMission, RecordMissionResponse
+from smb_mission_planner.srv import RemoveMission, RemoveMissionResponse
+from smb_mission_planner.srv import RemoveWaypoint, RemoveWaypointResponse
 from smb_mission_planner.srv import ToggleFileDump, ToggleFileDumpResponse
-
+from smb_mission_planner.srv import RecordBasePose, RecordBasePoseResponse
 
 class MissionRecorder():
-    def __init__(self, yaml_file_path, goal_topic_name):
+    def __init__(self, yaml_file_path, waypoint_topic_name, base_pose_topic_name):
         self.yaml_file_path = yaml_file_path
-        self.goal_topic_name = goal_topic_name
+        self.waypoint_topic_name = waypoint_topic_name
+        self.base_pose_topic_name = base_pose_topic_name
 
         self.current_mission_name = ""
-        self.current_goal_list = []
-        self.goal_counter = 0
+        self.current_waypoint_list = []
+        self.waypoint_counter = 0
         self.missions_data = collections.OrderedDict()
         self.file_dump_on = True
 
-        self.goal_pose_subscriber = rospy.Subscriber(self.goal_topic_name, PoseStamped, self.goalCallback)
-        self.add_mission_service = rospy.Service('add_mission', AddMission, self.addMission)
-        self.delete_mission_service = rospy.Service('delete_mission', DeleteMission, self.deleteMission)
-        self.delete_goal_service = rospy.Service('delete_goal', DeleteGoal, self.deleteGoal)
+        self.waypoint_pose_subscriber = rospy.Subscriber(self.waypoint_topic_name, PoseStamped, self.waypointCallback)
+        self.base_pose_subscriber = rospy.Subscriber(self.base_pose_topic_name, PoseStamped, self.basePoseCallback)
+        self.record_mission_service = rospy.Service('record_mission', RecordMission, self.recordMission)
+        self.remove_mission_service = rospy.Service('remove_mission', RemoveMission, self.removeMission)
+        self.remove_waypoint_service = rospy.Service('remove_waypoint', RemoveWaypoint, self.removeWaypoint)
+        self.record_base_pose_service = rospy.Service('record_base_pose', RecordBasePose, self.recordBasePose)
         self.toggle_file_dump_service = rospy.Service('toggle_file_dump', ToggleFileDump, self.toggleFileDump)
 
         self.main()
 
-    def addMission(self, data):
+    def recordMission(self, data):
         if(data.mission_name == ""):
             rospy.logwarn("The mission name cannot be empty. Recording of mission cancelled.")
-            return AddMissionResponse()
+            return RecordMissionResponse()
         self.current_mission_name = data.mission_name
 
-        current_goal_list = list(map(str.strip, data.goal_names.split(',')))
-        for goal_name in current_goal_list:
-            if(goal_name == ""):
-                rospy.logwarn("Goal names cannot be empty. Recording of mission cancelled.")
-                return AddMissionResponse()
-        self.current_goal_list = current_goal_list
+        current_waypoint_list = list(map(str.strip, data.waypoint_names.split(',')))
+        for waypoint_name in current_waypoint_list:
+            if(waypoint_name == ""):
+                rospy.logwarn("Waypoint names cannot be empty. Recording of mission cancelled.")
+                return RecordMissionResponse()
+        self.current_waypoint_list = current_waypoint_list
 
-        self.goal_counter = 0
+        self.waypoint_counter = 0
         rospy.loginfo("Recording of mission '" + self.current_mission_name + "' has started.")
-        rospy.loginfo("Please record the pose of the goal '" + self.current_goal_list[0] + "'.")
-        return AddMissionResponse()
+        rospy.loginfo("Please record the pose of the waypoint '" + self.current_waypoint_list[0] + "'.")
+        return RecordMissionResponse()
 
-    def deleteMission(self, data):
+    def removeMission(self, data):
         if(data.mission_name == ""):
-            rospy.logwarn("The mission name cannot be empty. Deleting of mission cancelled.")
-            return DeleteMissionResponse()
+            rospy.logwarn("The mission name cannot be empty. Deleting of mission cancWelled.")
+            return RemoveMissionResponse()
         try:
             del self.missions_data[data.mission_name]
-            rospy.loginfo("Mission '" + self.current_mission_name + "' deleted.")
-            return DeleteMissionResponse()
+            rospy.loginfo("Mission '" + self.current_mission_name + "' removed.")
+            return RemoveMissionResponse()
         except:
             rospy.logwarn("The mission '" + data.mission_name + "'does not exist. Deleting of mission cancelled.")
-            return DeleteMissionResponse()
+            return RemoveMissionResponse()
 
-    def goalCallback(self, pose_stamped_msg):
-        if(self.goal_counter < len(self.current_goal_list)):
-            self.addGoal(self.current_mission_name, self.current_goal_list[self.goal_counter], pose_stamped_msg)
-            rospy.loginfo("The pose of the goal '" + self.current_goal_list[self.goal_counter] + "' has been succesfully recorded.")
-            self.goal_counter += 1
-            if(self.goal_counter == len(self.current_goal_list)):
+    def waypointCallback(self, pose_stamped_msg):
+        if(self.waypoint_counter < len(self.current_waypoint_list)):
+            self.addWaypoint(self.current_mission_name, self.current_waypoint_list[self.waypoint_counter], pose_stamped_msg)
+            rospy.loginfo("The pose of the waypoint '" + self.current_waypoint_list[self.waypoint_counter] + "' has been succesfully recorded.")
+            self.waypoint_counter += 1
+            if(self.waypoint_counter == len(self.current_waypoint_list)):
                 rospy.loginfo("Recording of mission '" + self.current_mission_name + "' has been successfully completed.")
             else:
-                rospy.loginfo("Please record the pose of the next goal '" + self.current_goal_list[self.goal_counter] + "'.")
+                rospy.loginfo("Please record the pose of the next waypoint '" + self.current_waypoint_list[self.waypoint_counter] + "'.")
 
-    def addGoal(self, mission_name, goal_name, pose_stamped_msg):
+    def addWaypoint(self, mission_name, waypoint_name, pose_stamped_msg):
         x_m = pose_stamped_msg.pose.position.x
         y_m = pose_stamped_msg.pose.position.y
         quaternion = pose_stamped_msg.pose.orientation
         explicit_quat = [quaternion.x, quaternion.y, quaternion.z, quaternion.w]
         roll_rad, pitch_rad, yaw_rad = tf.transformations.euler_from_quaternion(explicit_quat)
 
-        new_goal = collections.OrderedDict({goal_name: {'x_m': x_m, 'y_m': y_m, 'yaw_rad': yaw_rad}})
+        new_waypoint = collections.OrderedDict({waypoint_name: {'x_m': x_m, 'y_m': y_m, 'yaw_rad': yaw_rad}})
         if(self.missions_data.get(mission_name) == None):
-            self.missions_data.update({mission_name: new_goal})
+            self.missions_data.update({mission_name: new_waypoint})
         else:
-            self.missions_data[mission_name].update(new_goal)
+            self.missions_data[mission_name].update(new_waypoint)
 
-    def deleteGoal(self, data):
+    def removeWaypoint(self, data):
         if(data.mission_name == ""):
-            rospy.logwarn("The mission name cannot be empty. Deleting of goal cancelled.")
-            return DeleteGoalResponse()
-        if(data.goal_name == ""):
-            rospy.logwarn("The goal name cannot be empty. Deleting of goal cancelled.")
-            return DeleteGoalResponse()
+            rospy.logwarn("The mission name cannot be empty. Deleting of waypoint cancelled.")
+            return RemoveWaypointResponse()
+        if(data.waypoint_name == ""):
+            rospy.logwarn("The waypoint name cannot be empty. Deleting of waypoint cancelled.")
+            return RemoveWaypointResponse()
         try:
-            del self.missions_data[data.mission_name][data.goal_name]
-            rospy.loginfo("Goal '" + data.goal_name + "' in mission '" + data.mission_name + "' deleted.")
-            return DeleteGoalResponse()
+            del self.missions_data[data.mission_name][data.waypoint_name]
+            rospy.loginfo("Waypoint '" + data.waypoint_name + "' in mission '" + data.mission_name + "' removed.")
+            return RemoveWaypointResponse()
         except:
-            rospy.logwarn("The goal '" + data.mission_name + "/" + data.goal_name + "' does not exist.")
-            return DeleteGoalResponse()
+            rospy.logwarn("The waypoint '" + data.mission_name + "/" + data.waypoint_name + "' does not exist.")
+            return RemoveWaypointResponse()
+
+    def basePoseCallback(self, pose_stamped_msg):
+        self.base_pose_msg = pose_stamped_msg
+
+    def recordBasePose(self, data):
+        self.waypointCallback(self.base_pose_msg)
+        return RecordBasePoseResponse();
 
     def toggleFileDump(self, data):
         self.file_dump_on = data.file_dump_on
@@ -115,7 +125,7 @@ class MissionRecorder():
     def main(self):
         rospy.init_node('mission_recorder_node')
         rospy.loginfo("Mission recorder ready.")
-        rospy.loginfo("Waiting for '/add_mission' services.")
+        rospy.loginfo("Waiting for '/record_mission' services.")
 
         # Wait for Ctrl-C to stop the application.
         rospy.spin()
