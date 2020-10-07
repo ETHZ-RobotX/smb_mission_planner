@@ -187,9 +187,12 @@ In the `example_config.yaml` you can find the recording we did beforehand as a r
 
 Next, we create the `mission_plan` in `mission_plan.py`. 
 Here, we implement the following behaviour:
-We start with the `Mission 1`, `check_fire_hazard`. We then attempt to do `Mission 2`, `gather_fruits`. In case `Mission 2` does not work, maybe because Cesar has put a trash bin in the way, we use our backup mission, `Mission 3`, `gather_vegetables`.
+We start with the `Mission 1`, `check_fire_hazard`. We then attempt to do `Mission 2`, `gather_fruits`.
+In case `Mission 2` does not work, maybe because Cesar has put a trash bin in the way, we use our backup mission, `Mission 3`, `gather_vegetables`.
 
-Make sure that the simulation and the path planner are running.
+![picture](docs/state_machine.png)
+
+Before executing the mission plan, make sure that the simulation and the path planner are running.
 We then execute the `mission_plan` by calling the `mission_planner` with:
 ```
 roslaunch smb_mission_planner mission_planner.launch
