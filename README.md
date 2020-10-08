@@ -154,13 +154,13 @@ You can use a `roslaunch` argument to specify a filepath for the input file, e.g
 roslaunch smb_mission_planner mission_planner.launch config_file_path:=/home/vklemm/smb_2_0_catkin_ws/src/smb_mission_planner/configs/my_amazing_config.yaml
 ```
 
-#### Choose your own input topic for recording
+#### Choose your own goal topic
 You can use a `roslaunch` argument to specify the waypoints' pose topic:
 ```
 roslaunch smb_mission_planner mission_planner.launch waypoint_topic_name:=/move_base_simple/goal
 ```
 
-#### Choose your own odometry topic for recording
+#### Choose your own odometry topic
 You can use a `roslaunch` argument to specify the base's pose topic:
 ```
 roslaunch smb_mission_planner mission_planner.launch base_pose_topic_name:=/base_pose_measured
