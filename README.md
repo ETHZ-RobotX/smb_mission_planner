@@ -52,9 +52,9 @@ You can now input the waypoint poses of the current mission one by one.
 This can be done 
 
 - in `rviz` by clicking `2D Nav Goal` and visually placing the pose on your map.
-- by calling the service `rosservice call /record_base_pose`, which will record the current base pose as a waypoint.
 - by sending the desired pose in the topic `/move_base_simple/goal`.
 - in `rviz` by sending a goal with the `smb_path_planner` widget.
+- by calling the service `rosservice call /record_base_pose`, which will record the current base pose as a waypoint. Make sure that the odometry topic for the base pose is set correctly (see *Advanced Features* on how to do that).
 
 After having recorded all your missions, stop the node with `Ctrl-C`. 
 All your recorded missions will be dumped to a `yaml` file (`my_config.yaml` per default).
@@ -213,6 +213,7 @@ See the command line window of the mission planner for comprehensive information
 - It is easy to forget to change the mission names in the `mission_plan.py` when recording new missions.
 - The rosservice argument must be of the form `{"mission_name","waypoint_1_name, waypoint_2_name, ..."}` without a space after the separating comma between the strings.
 - If the `smach` viewer does not display anything, make sure to select `/mission_planner` for the `Path:`-selection in its toolbar.
+- Make sure that your waypoints' pose topic and your base pose's topic are set correctly.
 
 
 
