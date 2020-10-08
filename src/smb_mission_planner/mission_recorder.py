@@ -118,7 +118,7 @@ class MissionRecorder():
 
     def dump(self):
         if(self.file_dump_on):
-            with open(self.yaml_file_path, 'w') as file:
+            with open(self.yaml_file_path, 'w+') as file:
                 yaml.dump(self.missions_data, file, default_flow_style=False)
                 rospy.loginfo("Mission file succesfully dumped under: " + self.yaml_file_path)
 
