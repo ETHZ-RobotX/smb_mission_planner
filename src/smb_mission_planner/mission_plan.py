@@ -1,5 +1,6 @@
+#!/usr/bin/env python2
+
 import smach
-import smach_ros
 import mission_planner
 
 
