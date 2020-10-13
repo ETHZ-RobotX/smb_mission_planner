@@ -26,7 +26,7 @@ class MissionPlanner():
 
     def readMissionsData(self):
         with open(self.yaml_file_path, 'r') as file:
-            self.missions_data = yaml.load(file)
+            self.missions_data = yaml.load(file, Loader=yaml.FullLoader)
 
     def main(self):
         rospy.init_node('mission_planner_node')
@@ -53,8 +53,16 @@ class DefaultMission(smach.State):
         self.mission_data = mission_data
         self.waypoint_idx = 0
 
-        self.waypoint_pose_publisher = rospy.Publisher(waypoint_topic_name_global, PoseStamped, queue_size=10)
+        self.waypoint_pose_publisher = rospy.Publisher(waypoint_topic_name_global, PoseStamped, queue_size=1)
         self.base_pose_subscriber = rospy.Subscriber(base_pose_topic_name_global, PoseStamped, self.basePoseCallback)
+        while self.waypoint_pose_publisher.get_num_connections() == 0 and not rospy.is_shutdown():
+            rospy.loginfo("Waiting for subscriber to connect to '" +
+                          waypoint_topic_name_global + "'.")
+            rospy.sleep(1)
+        while self.base_pose_subscriber.get_num_connections() == 0 and not rospy.is_shutdown():
+            rospy.loginfo("Waiting for publisher to connect to '" +
+                          base_pose_topic_name_global + "'.")
+            rospy.sleep(1)
 
         self.countdown_s = 60
         self.countdown_decrement_s = 1
