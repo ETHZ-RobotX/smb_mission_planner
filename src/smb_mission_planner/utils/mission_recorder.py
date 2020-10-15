@@ -11,7 +11,8 @@ from smb_mission_planner.srv import RemoveWaypoint, RemoveWaypointResponse
 from smb_mission_planner.srv import ToggleFileDump, ToggleFileDumpResponse
 from smb_mission_planner.srv import RecordBasePose, RecordBasePoseResponse
 
-class MissionRecorder():
+
+class MissionRecorder(object):
     def __init__(self, yaml_file_path, waypoint_topic_name, base_pose_topic_name):
         self.yaml_file_path = yaml_file_path
         self.waypoint_topic_name = waypoint_topic_name

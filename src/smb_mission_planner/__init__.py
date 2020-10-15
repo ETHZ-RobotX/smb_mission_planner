@@ -1,1 +1,1 @@
-import smb_mission_planner.mission_recorder
+import smb_mission_planner.utils.mission_recorder

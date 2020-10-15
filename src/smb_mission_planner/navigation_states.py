@@ -1,68 +1,56 @@
 #!/usr/bin/env python2
 
+import tf
+import yaml
 import math
 import rospy
-import oyaml as yaml
-import tf
 import smach
-import smach_ros
 from geometry_msgs.msg import PoseStamped
-import mission_plan
+
+"""
+Here define all the navigation related states
+"""
 
 
-class MissionPlanner():
-    def __init__(self, yaml_file_path, waypoint_topic_name, base_pose_topic_name):
-        # Read missions data.
-        self.yaml_file_path = yaml_file_path
-        self.readMissionsData()
-
-        # Set topic names to be easily used in mission definitions.
-        global waypoint_topic_name_global
-        global base_pose_topic_name_global
-        waypoint_topic_name_global = waypoint_topic_name
-        base_pose_topic_name_global = base_pose_topic_name
-
-        self.main()
-
-    def readMissionsData(self):
-        with open(self.yaml_file_path, 'r') as file:
-            self.missions_data = yaml.load(file)
-
-    def main(self):
-        rospy.init_node('mission_planner_node')
-        rospy.loginfo("Mission planner started.")
-
-        # Setup state machine.
-        state_machine = mission_plan.createMissionPlan(self.missions_data)
-
-        # Create and start the introspection server.
-        introspection_server = smach_ros.IntrospectionServer('mission_planner_introspection_server', state_machine, '/mission_planner')
-        introspection_server.start()
-
-        # Execute state machine.
-        outcome = state_machine.execute()
-        rospy.loginfo("Mission plan terminated with outcome '" + outcome + "'.")
-
-        # Wait for ctrl-c to stop the application
-        introspection_server.stop()
-
-
-class DefaultMission(smach.State):
-    def __init__(self, mission_data):
+class WaypointNavigation(smach.State):
+    """
+    In this state the robot navigates through a sequence of waypoint which are sent to the
+    global planner once the previous has been reached within a certain tolerance
+    """
+    def __init__(self, mission, waypoint_pose_topic, base_pose_topic):
         smach.State.__init__(self, outcomes=['Completed', 'Aborted', 'Next Waypoint'])
-        self.mission_data = mission_data
+        self.mission_data = mission
         self.waypoint_idx = 0
 
-        self.waypoint_pose_publisher = rospy.Publisher(waypoint_topic_name_global, PoseStamped, queue_size=10)
-        self.base_pose_subscriber = rospy.Subscriber(base_pose_topic_name_global, PoseStamped, self.basePoseCallback)
+        self.waypoint_pose_publisher = rospy.Publisher(waypoint_pose_topic, PoseStamped, queue_size=10)
+        self.base_pose_subscriber = rospy.Subscriber(base_pose_topic, PoseStamped, self.base_pose_callback)
 
         self.countdown_s = 60
         self.countdown_decrement_s = 1
         self.distance_to_waypoint_tolerance_m = 0.3
         self.angle_to_waypoint_tolerance_rad = 0.7
 
+        self.waypoint_x_m = 0.
+        self.waypoint_y_m = 0.
+        self.waypoint_yaw_rad = 0.
+
+        self.estimated_x_m = 0.
+        self.estimated_y_m = 0.
+        self.estimated_yaw_rad = 0.
+
+    @staticmethod
+    def read_missions_data(mission_file):
+        """
+        Reads the mission data and return the corresponding dictionary
+        :param mission_file:
+        :return:
+        """
+        assert mission_file.endswith(".yaml")
+        with open(mission_file, 'r') as stream:
+            return yaml.load(stream)
+
     def execute(self, userdata):
-        if(self.waypoint_idx >= len(self.mission_data.keys())):
+        if self.waypoint_idx >= len(self.mission_data.keys()):
             rospy.loginfo("No more waypoints left in current mission.")
             self.waypoint_idx = 0
             return 'Completed'
@@ -70,13 +58,14 @@ class DefaultMission(smach.State):
         current_waypoint_name = self.mission_data.keys()[self.waypoint_idx]
         current_waypoint = self.mission_data[current_waypoint_name]
 
-        self.setWaypoint(current_waypoint['x_m'], current_waypoint['y_m'], current_waypoint['yaw_rad'])
+        self.set_waypoint(current_waypoint['x_m'], current_waypoint['y_m'], current_waypoint['yaw_rad'])
         rospy.loginfo("Waypoint set: '" + current_waypoint_name + "'.")
 
         countdown_s = self.countdown_s
         while countdown_s and not rospy.is_shutdown():
-            if(self.reachedWaypointWithTolerance()):
-                rospy.loginfo("Waypoint '" + current_waypoint_name + "' reached before countdown ended. Loading next waypoint...")
+            if self.reached_waypoint_with_tolerance():
+                rospy.loginfo("Waypoint '" + current_waypoint_name +
+                              "' reached before countdown ended. Loading next waypoint...")
                 self.waypoint_idx += 1
                 return 'Next Waypoint'
             else:
@@ -84,7 +73,7 @@ class DefaultMission(smach.State):
                 rospy.sleep(self.countdown_decrement_s)
             countdown_s -= self.countdown_decrement_s
         rospy.logwarn("Countdown ended without reaching waypoint '" + current_waypoint_name + "'.")
-        if(self.waypoint_idx == 0):
+        if self.waypoint_idx == 0:
             rospy.logwarn("Starting waypoint of mission unreachable. Aborting current mission.")
             self.waypoint_idx = 0.
             return 'Aborted'
@@ -93,7 +82,7 @@ class DefaultMission(smach.State):
             self.waypoint_idx += 1
             return 'Next Waypoint'
 
-    def setWaypoint(self, x_m, y_m, yaw_rad):
+    def set_waypoint(self, x_m, y_m, yaw_rad):
         quaternion = tf.transformations.quaternion_from_euler(0., 0., yaw_rad)
 
         pose_stamped_msg = PoseStamped()
@@ -114,7 +103,7 @@ class DefaultMission(smach.State):
         self.waypoint_y_m = y_m
         self.waypoint_yaw_rad = yaw_rad
 
-    def basePoseCallback(self, pose_stamped_msg):
+    def base_pose_callback(self, pose_stamped_msg):
         rospy.loginfo_once("Estimated base pose received from now on.")
 
         x_m = pose_stamped_msg.pose.position.x
@@ -127,9 +116,10 @@ class DefaultMission(smach.State):
         self.estimated_y_m = y_m
         self.estimated_yaw_rad = yaw_rad
 
-    def reachedWaypointWithTolerance(self):
+    def reached_waypoint_with_tolerance(self):
         try:
-            distance_to_waypoint = math.sqrt(pow(self.waypoint_x_m - self.estimated_x_m, 2) + pow(self.waypoint_y_m - self.estimated_y_m, 2))
+            distance_to_waypoint = math.sqrt(pow(self.waypoint_x_m - self.estimated_x_m, 2) +
+                                             pow(self.waypoint_y_m - self.estimated_y_m, 2))
             angle_to_waypoint = abs(self.waypoint_yaw_rad - self.estimated_yaw_rad)
             distance_to_waypoint_satisfied = (distance_to_waypoint <= self.distance_to_waypoint_tolerance_m)
             angle_to_waypoint_satisfied = (angle_to_waypoint <= self.angle_to_waypoint_tolerance_rad)
@@ -137,4 +127,5 @@ class DefaultMission(smach.State):
             return distance_to_waypoint_satisfied and angle_to_waypoint_satisfied
         except:
             rospy.logwarn("No estimated base pose received yet.")
-            return False;
+            return False
+

@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<launch>
+  <arg name="config_file_path"      default="$(find smb_mission_planner)/configs/my_config.yaml"/>
+  <arg name="waypoint_topic_name"   default="/move_base_simple/goal"/>
+  <arg name="base_pose_topic_name"  default="/base_pose_measured"/>
+  <arg name="enable_viewer"         default="false"/>
+
+  <node pkg="smb_mission_planner" type="navigation_mission.py"  name="navigation_mission" output="screen">
+    <param name="mission_file"    value="$(arg config_file_path)"/>
+    <param name="move_base_topic" value="$(arg waypoint_topic_name)"/>
+    <param name="odometry_topic"  value="base_pose_topic_name"/>
+  </node>
+
+  <group if="$(arg enable_viewer)">
+    <node pkg="smach_viewer" type="smach_viewer.py" name="smach_viewer_node" output="screen" />
+  </group>
+
+</launch>
