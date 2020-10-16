@@ -18,7 +18,16 @@ class BaseStateRos(smach.State):
         self.namespace = ns
 
     def get_scoped_param(self, param_name):
-        named_param = join(self.namespace, param_name)
+        """
+        Get the absolute path relative to the state namespace of the path relative to the
+        state and ros namespace
+        Example: TODO
+        """
+        print(rospy.get_namespace())
+        if param_name.startswith('/'):
+            named_param = join(self.namespace, param_name)
+        else:
+            named_param = join(rospy.get_namespace(), self.namespace, param_name)
         return ros_utils.get_param_safe(named_param)
 
     def execute(self, ud):

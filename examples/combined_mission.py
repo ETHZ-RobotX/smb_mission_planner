@@ -17,41 +17,39 @@ scans the environment and upon successful detection
 rospy.init_node('combined_mission_node')
 
 # File of prerecorded waypoint-base navigation missions
-navigation_file = ros_utils.get_param_safe("mission_file")
+navigation_file = ros_utils.get_param_safe("~mission_file")
 
 # Topic listening for the global planner goals
-move_base_topic = ros_utils.get_param_safe("move_base_topic")
+move_base_topic = ros_utils.get_param_safe("~move_base_topic")
 
 # Topic where the base odometry is published. Used as reference for navigation
-odometry_topic = ros_utils.get_param_safe("odometry_topic")
-
-# Name of the arm group that moveit will plan trajectories for
-arm_moveit_group = ros_utils.get_param_safe("arm_moveit_group")
+odometry_topic = ros_utils.get_param_safe("~odometry_topic")
 
 # Parse the missions data
 missions_data = WaypointNavigation.read_missions_data(navigation_file)
+assert missions_data.has_key('detection')
 
 
 state_machine = smach.StateMachine(outcomes=['Success', 'Failure'])
 with state_machine:
-    smach.StateMachine.add('HOME_ROBOT', MoveItHome(ns="HOME_ROBOT"),
+    smach.StateMachine.add('HOME_ROBOT', MoveItHome(ns="home_robot"),
                            transitions={'Completed': 'REACH_DETECTION_HOTSPOT',
                                         'Failure': 'Failure'})
 
-    smach.StateMachine.add('REACH_DETECTION_HOTSPOT', WaypointNavigation(missions_data['detection_mission'],
+    smach.StateMachine.add('REACH_DETECTION_HOTSPOT', WaypointNavigation(missions_data['detection'],
                                                                          waypoint_pose_topic=move_base_topic,
                                                                          base_pose_topic=odometry_topic,
-                                                                         ns="REACH_DETECTION_HOTSPOT"),
+                                                                         ns="reach_detection_hotspot"),
                            transitions={'Completed': 'DETECT',
                                         'Aborted': 'Failure',
                                         'Next Waypoint': 'REACH_DETECTION_HOTSPOT'})
 
-    smach.StateMachine.add('DETECT', ObjectDetectionWithService(max_num_failure=2, ns='DETECT'),
+    smach.StateMachine.add('DETECT', ObjectDetectionWithService(max_num_failure=2, ns='detect'),
                            transitions={'Completed': 'Success',
                                         'Failure': 'Failure',
-                                        'Retry': 'Mission 1'})
+                                        'Retry': 'NEW_VIEWPOINT'})
 
-    smach.StateMachine.add('NEW_VIEWPOINT', JointsConfigurationVisitor(ns='NEW_VIEWPOINT'),
+    smach.StateMachine.add('NEW_VIEWPOINT', JointsConfigurationVisitor(ns='new_viewpoint'),
                            transitions={'Completed': 'DETECT',
                                         'Failure': 'Failure'})
 

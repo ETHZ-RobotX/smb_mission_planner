@@ -1,2 +1,3 @@
 ---
 geometry_msgs/PoseStamped object_pose
+bool success

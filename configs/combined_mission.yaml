@@ -1,17 +1,17 @@
 # Config file for the combined mission
 # Namespaces mirror (optionally) the state for better readability
 
-HOME_ROBOT:
+home_robot:
   some_other_key: "value"
 
-REACH_DETECTION_HOTSPOT:
+reach_detection_hotspot:
   some_other_key: "value"
 
-DETECT:
-  obect_detection_service_name : "something"
+detect:
+  detection_service_name : "/detection_service"
 
-NEW_VIEWPOINT:
-  joint_configurations:
+new_viewpoint:
+  joints_configurations:
     - [0.0 0.0 0.0 0.0 0.0 0.0 0.0]
     - [0.0 0.0 0.0 0.0 0.0 0.0 0.0]
     - [0.0 0.0 0.0 0.0 0.0 0.0 0.0]

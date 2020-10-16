@@ -45,9 +45,14 @@ class ObjectDetectionWithService(ObjectDetection):
     def detection_implementation(self):
         try:
             self.detection_service.wait_for_service(timeout=10.0)
+            req = DetectObjectRequest()
+            res = self.detection_service.call(req)
+            if not res.success:
+                rospy.logwarn("Detection failed")
+            else:
+                rospy.loginfo("Detection succeeded")
+            return res.success
+
         except rospy.ROSException as exc:
             rospy.logerr(exc)
             return False
-
-        req = DetectObjectRequest()
-        self.detection_service.call(req)

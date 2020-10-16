@@ -26,9 +26,17 @@ base_pose_publisher = rospy.Publisher(odometry_topic, PoseStamped, queue_size=10
 
 
 # Detection Servers
+attempts = 0
+
 def detection_callback(req):
+    global attempts
     res = DetectObjectResponse()
     res.object_pose = PoseStamped()
+    if attempts == 0:
+        res.success = False
+    else:
+        res.success = True
+    attempts += 1
     return res
 
 

@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 
 from moveit_msgs.msg import Constraints, OrientationConstraint
+
+import os
 import sys
 import rospy
 import moveit_commander
@@ -18,20 +20,20 @@ class MoveItPlanner(object):
         self.fake_execution = rospy.get_param("/moveit_planner/fake_execution", False)
         if not self.fake_execution:
             try:
-                self.is_gripper_present = rospy.get_param("/moveit/is_gripper_present", False)
+                self.is_gripper_present = rospy.get_param("/moveit_planner/is_gripper_present", False)
                 if self.is_gripper_present:
-                    gripper_joint_names = rospy.get_param("/moveit/gripper_joint_names", [])
+                    gripper_joint_names = rospy.get_param("/moveit_planner/gripper_joint_names", [])
                     self.gripper_joint_name = gripper_joint_names[0]
                 else:
                     self.gripper_joint_name = ""
-                self.degrees_of_freedom = rospy.get_param("/moveit/degrees_of_freedom", 7)
+                self.degrees_of_freedom = rospy.get_param("/moveit_planner/degrees_of_freedom", 7)
 
                 # Create the MoveItInterface necessary objects
-                arm_group_name = "arm"
-                self.description_name = rospy.get_param("moveit/description_name")
+                arm_group_name = rospy.get_param("/moveit_planner/arm_group_name")
+                self.description_name = rospy.get_param("moveit_planner/description_name")
                 self.robot = moveit_commander.RobotCommander(self.description_name)
 
-                self.namespace = rospy.get_param("moveit/namespace")
+                self.namespace = rospy.get_param("/moveit_planner/namespace")
                 self.scene = moveit_commander.PlanningSceneInterface(ns=self.namespace)
                 self.arm_group = moveit_commander.MoveGroupCommander(arm_group_name, ns=self.namespace)
                 self.display_trajectory_publisher = rospy.Publisher(
