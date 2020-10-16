@@ -25,6 +25,7 @@ Each of these steps is explained in detail in the upcoming sections.
 - Clone this repo into your workspace
 - Install `smach` from [here](http://wiki.ros.org/smach) (a state machine library for python)
 - Install `smach_ros` from [here](http://wiki.ros.org/smach_ros) (ROS compatibility for `smach`, e.g. for the viewer in rqt)
+- Install `smach_viewer` 
 - Install `oyaml` with `pip install oyaml` (enables python2 compatibility with ordered dicts for `yaml` file dump)
 - (Buid the package with `catkin build smb_mission_planner`)
 

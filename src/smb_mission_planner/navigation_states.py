@@ -5,6 +5,7 @@ import yaml
 import math
 import rospy
 from geometry_msgs.msg import PoseStamped
+from threading import Lock
 
 from smb_mission_planner.base_state_ros import BaseStateRos
 """
@@ -34,6 +35,8 @@ class WaypointNavigation(BaseStateRos):
         self.waypoint_y_m = 0.
         self.waypoint_yaw_rad = 0.
 
+        self.base_pose_lock = Lock()
+        self.base_pose_received = False
         self.estimated_x_m = 0.
         self.estimated_y_m = 0.
         self.estimated_yaw_rad = 0.
@@ -69,7 +72,9 @@ class WaypointNavigation(BaseStateRos):
                 self.waypoint_idx += 1
                 return 'Next Waypoint'
             else:
-                rospy.loginfo(str(countdown_s) + "s left until skipping waypoint '" + current_waypoint_name + "'.")
+                rospy.loginfo_throttle(5.0,
+                                       str(countdown_s) + "s left until skipping waypoint '" +
+                                       current_waypoint_name + "'.")
                 rospy.sleep(self.countdown_decrement_s)
             countdown_s -= self.countdown_decrement_s
         rospy.logwarn("Countdown ended without reaching waypoint '" + current_waypoint_name + "'.")
@@ -97,6 +102,9 @@ class WaypointNavigation(BaseStateRos):
         pose_stamped_msg.pose.orientation.y = quaternion[1]
         pose_stamped_msg.pose.orientation.z = quaternion[2]
         pose_stamped_msg.pose.orientation.w = quaternion[3]
+
+        while not self.waypoint_pose_publisher.get_num_connections():
+            rospy.loginfo_throttle(1.0, "Waiting for subscriber to connect to waypoint topic")
         self.waypoint_pose_publisher.publish(pose_stamped_msg)
 
         self.waypoint_x_m = x_m
@@ -104,6 +112,7 @@ class WaypointNavigation(BaseStateRos):
         self.waypoint_yaw_rad = yaw_rad
 
     def base_pose_callback(self, pose_stamped_msg):
+        self.base_pose_lock.acquire()
         rospy.loginfo_once("Estimated base pose received from now on.")
 
         x_m = pose_stamped_msg.pose.position.x
@@ -115,16 +124,22 @@ class WaypointNavigation(BaseStateRos):
         self.estimated_x_m = x_m
         self.estimated_y_m = y_m
         self.estimated_yaw_rad = yaw_rad
+        self.base_pose_received = True
+        self.base_pose_lock.release()
 
     def reached_waypoint_with_tolerance(self):
         try:
-            distance_to_waypoint = math.sqrt(pow(self.waypoint_x_m - self.estimated_x_m, 2) +
-                                             pow(self.waypoint_y_m - self.estimated_y_m, 2))
-            angle_to_waypoint = abs(self.waypoint_yaw_rad - self.estimated_yaw_rad)
-            distance_to_waypoint_satisfied = (distance_to_waypoint <= self.distance_to_waypoint_tolerance_m)
-            angle_to_waypoint_satisfied = (angle_to_waypoint <= self.angle_to_waypoint_tolerance_rad)
-
-            return distance_to_waypoint_satisfied and angle_to_waypoint_satisfied
+            lin_tol_ok = False
+            ang_tol_ok = False
+            self.base_pose_lock.acquire()
+            if self.base_pose_received:
+                distance_to_waypoint = math.sqrt(pow(self.waypoint_x_m - self.estimated_x_m, 2) +
+                                                 pow(self.waypoint_y_m - self.estimated_y_m, 2))
+                angle_to_waypoint = abs(self.waypoint_yaw_rad - self.estimated_yaw_rad)
+                lin_tol_ok = (distance_to_waypoint <= self.distance_to_waypoint_tolerance_m)
+                ang_tol_ok = (angle_to_waypoint <= self.angle_to_waypoint_tolerance_rad)
+            self.base_pose_lock.release()
+            return lin_tol_ok and ang_tol_ok and self.base_pose_received
         except:
             rospy.logwarn("No estimated base pose received yet.")
             return False

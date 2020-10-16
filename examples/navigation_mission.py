@@ -1,8 +1,11 @@
+#!/usr/bin/env python2
+
 import rospy
 import smach
 import smach_ros
 from smb_mission_planner.navigation_states import WaypointNavigation
 from smb_mission_planner.utils import ros_utils
+
 """
 Example script consisting of performing different missions, each consisting of a navigation
 through predefined waypoint which have been previously recorded
@@ -11,9 +14,9 @@ through predefined waypoint which have been previously recorded
 rospy.init_node('navigation_mission_node')
 
 # Parse params
-mission_file = ros_utils.get_param_safe("mission_file")
-move_base_topic = ros_utils.get_param_safe("move_base_topic")
-odometry_topic = ros_utils.get_param_safe("odometry_topic")
+mission_file = ros_utils.get_param_safe("~mission_file")
+move_base_topic = ros_utils.get_param_safe("~move_base_topic")
+odometry_topic = ros_utils.get_param_safe("~odometry_topic")
 
 state_machine = smach.StateMachine(outcomes=['Success', 'Failure'])
 mission_data = WaypointNavigation.read_missions_data(mission_file)
@@ -39,7 +42,7 @@ with state_machine:
                                                                    base_pose_topic=odometry_topic,
                                                                    ns="GATHER_VEGETABLES"),
                            transitions={'Completed': 'Success',
-                                        'Aborted': ' Failure',
+                                        'Aborted': 'Failure',
                                         'Next Waypoint': 'GATHER_VEGETABLES'})
 
 # Create and start the introspection server

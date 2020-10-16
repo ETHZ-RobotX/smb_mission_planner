@@ -19,6 +19,8 @@
 
   <exec_depend>message_runtime</exec_depend>
   <exec_depend>rospy</exec_depend>
+  <exec_depend>smach_viewer</exec_depend>
 
   <depend>std_msgs</depend>
+  <depend>geometry_msgs</depend>
 </package>

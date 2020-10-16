@@ -1,7 +1,7 @@
 #!/usr/bin/env python2
 import rospy
 from smb_mission_planner.base_state_ros import BaseStateRos
-from smb_mission_planner.srv import DetectObjectRequest, DetectObject
+from smb_mission_planner.srv import DetectObject, DetectObjectRequest
 """
 Here define all the detection related states
 """
