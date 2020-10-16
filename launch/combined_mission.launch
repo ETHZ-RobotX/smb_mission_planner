@@ -10,10 +10,9 @@
     <param name="odometry_topic"  value="$(arg base_pose_topic_name)"/>
   </node>
 
-  <node pkg="smb_mission_planner" type="navigation_mission.py"  name="navigation_mission" output="screen">
+  <node pkg="smb_mission_planner" type="combined_mission.py"  name="navigation_mission" output="screen">
     <param name="mission_file"    value="$(arg config_file_path)"/>
-    <param name="move_base_topic" value="$(arg waypoint_topic_name)"/>
-    <param name="odometry_topic"  value="base_pose_topic_name"/>
+    <rosparam command="load" file="$(find smb_mission_planner)/configs/combined_mission.yaml"/>
   </node>
 
   <group if="$(arg enable_viewer)">

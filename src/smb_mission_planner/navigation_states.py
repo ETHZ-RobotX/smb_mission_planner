@@ -4,21 +4,21 @@ import tf
 import yaml
 import math
 import rospy
-import smach
 from geometry_msgs.msg import PoseStamped
 
+from smb_mission_planner.base_state_ros import BaseStateRos
 """
 Here define all the navigation related states
 """
 
 
-class WaypointNavigation(smach.State):
+class WaypointNavigation(BaseStateRos):
     """
     In this state the robot navigates through a sequence of waypoint which are sent to the
     global planner once the previous has been reached within a certain tolerance
     """
-    def __init__(self, mission, waypoint_pose_topic, base_pose_topic):
-        smach.State.__init__(self, outcomes=['Completed', 'Aborted', 'Next Waypoint'])
+    def __init__(self, mission, waypoint_pose_topic, base_pose_topic, ns=""):
+        BaseStateRos.__init__(self, outcomes=['Completed', 'Aborted', 'Next Waypoint'], ns="")
         self.mission_data = mission
         self.waypoint_idx = 0
 
