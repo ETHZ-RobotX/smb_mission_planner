@@ -2,6 +2,8 @@
 import rospy
 from smb_mission_planner.base_state_ros import BaseStateRos
 from smb_mission_planner.srv import DetectObject, DetectObjectRequest
+from geometry_msgs.msg import PoseStamped
+
 """
 Here define all the detection related states
 """
@@ -14,7 +16,7 @@ class ObjectDetection(BaseStateRos):
     def __init__(self, max_num_failure=1, ns=""):
         BaseStateRos.__init__(self,
                               outcomes=['Completed', 'Failure', 'Retry'],
-                              input_keys=['reset'],
+                              output_keys=['detected_object', 'detected_pose'],
                               ns=ns)
 
         self.current_failures = 0
@@ -22,7 +24,9 @@ class ObjectDetection(BaseStateRos):
 
     def execute(self, ud):
 
-        success = self.detection_implementation()
+        success, object_name, object_pose = self.detection_implementation()
+        ud.detected_object = object_name
+        ud.detected_pose = object_pose
 
         if success:
             return 'Completed'
@@ -49,10 +53,11 @@ class ObjectDetectionWithService(ObjectDetection):
             res = self.detection_service.call(req)
             if not res.success:
                 rospy.logwarn("Detection failed")
+                return res.success, '', PoseStamped()
             else:
                 rospy.loginfo("Detection succeeded")
-            return res.success
+                return res.success, res.object_name, res.object_pose
 
         except rospy.ROSException as exc:
             rospy.logerr(exc)
-            return False
+            return False, '', PoseStamped()

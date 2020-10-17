@@ -8,6 +8,8 @@ from geometry_msgs.msg import PoseStamped
 from threading import Lock
 
 from smb_mission_planner.base_state_ros import BaseStateRos
+from smb_mission_planner.utils import rocoma_utils
+
 """
 Here define all the navigation related states
 """
@@ -19,7 +21,7 @@ class WaypointNavigation(BaseStateRos):
     global planner once the previous has been reached within a certain tolerance
     """
     def __init__(self, mission, waypoint_pose_topic, base_pose_topic, ns=""):
-        BaseStateRos.__init__(self, outcomes=['Completed', 'Aborted', 'Next Waypoint'], ns="")
+        BaseStateRos.__init__(self, outcomes=['Completed', 'Aborted', 'Next Waypoint'], ns=ns)
         self.mission_data = mission
         self.waypoint_idx = 0
 
@@ -57,6 +59,11 @@ class WaypointNavigation(BaseStateRos):
             rospy.loginfo("No more waypoints left in current mission.")
             self.waypoint_idx = 0
             return 'Completed'
+
+        success = rocoma_utils.switch_roco_controller("MpcTrackLocalPlan", ns="/smb_highlevel_controller")
+        if not success:
+            rospy.logerr("Could not execute the navigation plan")
+            return 'Aborted'
 
         current_waypoint_name = self.mission_data.keys()[self.waypoint_idx]
         current_waypoint = self.mission_data[current_waypoint_name]
@@ -143,4 +150,3 @@ class WaypointNavigation(BaseStateRos):
         except:
             rospy.logwarn("No estimated base pose received yet.")
             return False
-

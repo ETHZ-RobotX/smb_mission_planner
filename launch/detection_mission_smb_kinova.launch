@@ -1,0 +1,26 @@
+<?xml version="1.0"?>
+<launch>
+  <arg name="config_file_path"        default="$(find smb_mission_planner)/configs/my_config.yaml"/>
+  <arg name="waypoint_topic_name"     default="/move_base_simple/goal"/>
+  <arg name="base_pose_topic_name"    default="/base_pose_measured"/>
+  <arg name="enable_viewer"           default="true"/>
+
+  <param name="/moveit_planner/description_name"      value="gen3/robot_description"/>
+  <param name="/moveit_planner/fake_execution"        value="false"/>
+  <param name="/moveit_planner/arm_group_name"        value="arm"/>
+  <param name="/moveit_planner/namespace"             value="gen3"/>
+
+  <!--    State dependent parameters-->
+  <rosparam command="load" file="$(find smb_mission_planner)/configs/combined_mission.yaml"/>
+
+  <node pkg="smb_mission_planner" type="combined_mission.py"  name="detection_mission" output="screen">
+    <param name="mission_file"    value="$(arg config_file_path)"/>
+    <param name="move_base_topic" value="$(arg waypoint_topic_name)"/>
+    <param name="odometry_topic"  value="$(arg base_pose_topic_name)"/>
+  </node>
+
+  <group if="$(arg enable_viewer)">
+    <node pkg="smach_viewer" type="smach_viewer.py" name="smach_viewer_node" output="screen" />
+  </group>
+
+</launch>

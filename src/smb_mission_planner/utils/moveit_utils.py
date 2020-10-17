@@ -13,11 +13,11 @@ class MoveItPlanner(object):
     """ExampleMoveItTrajectories"""
 
     def __init__(self):
-
-        super(MoveItPlanner, self).__init__()
         moveit_commander.roscpp_initialize(sys.argv)
 
         self.fake_execution = rospy.get_param("/moveit_planner/fake_execution", False)
+        rospy.loginfo("MoveItPlanner fake_execution: {}".format(self.fake_execution))
+
         if not self.fake_execution:
             try:
                 self.is_gripper_present = rospy.get_param("/moveit_planner/is_gripper_present", False)
@@ -29,13 +29,16 @@ class MoveItPlanner(object):
                 self.degrees_of_freedom = rospy.get_param("/moveit_planner/degrees_of_freedom", 7)
 
                 # Create the MoveItInterface necessary objects
-                arm_group_name = rospy.get_param("/moveit_planner/arm_group_name")
-                self.description_name = rospy.get_param("moveit_planner/description_name")
+                self.arm_group_name = rospy.get_param("/moveit_planner/arm_group_name")
+                self.description_name = rospy.get_param("/moveit_planner/description_name")
                 self.robot = moveit_commander.RobotCommander(self.description_name)
 
                 self.namespace = rospy.get_param("/moveit_planner/namespace")
                 self.scene = moveit_commander.PlanningSceneInterface(ns=self.namespace)
-                self.arm_group = moveit_commander.MoveGroupCommander(arm_group_name, ns=self.namespace)
+
+                self.arm_group = moveit_commander.MoveGroupCommander(self.arm_group_name,
+                                                                     robot_description=self.description_name,
+                                                                     ns=self.namespace)
                 self.display_trajectory_publisher = rospy.Publisher(
                     os.path.join(self.namespace + 'move_group/display_planned_path'),
                     moveit_msgs.msg.DisplayTrajectory,
@@ -45,6 +48,8 @@ class MoveItPlanner(object):
                     gripper_group_name = "gripper"
                     self.gripper_group = moveit_commander.MoveGroupCommander(gripper_group_name, ns=self.namespace)
 
+                self.planning_frame = self.arm_group.get_planning_frame()
+                rospy.loginfo("Planning in the reference frame: {}".format(self.planning_frame))
                 rospy.loginfo("Initializing node in namespace " + rospy.get_namespace())
             except Exception as e:
                 print(e)
@@ -57,27 +62,24 @@ class MoveItPlanner(object):
             rospy.sleep(1.0)
             return True
 
-        arm_group = self.arm_group
-
         # Going to one of those targets
         rospy.loginfo("Going to named target " + target)
         # Set the target
-        arm_group.set_named_target(target)
+        self.arm_group.set_named_target(target)
         # Plan the trajectory
-        planned_path1 = arm_group.plan()
+        planned_path1 = self.arm_group.plan()
         # Execute the trajectory and block while it's not finished
-        return arm_group.execute(planned_path1, wait=True)
+        return self.arm_group.execute(planned_path1, wait=True)
 
     def reach_joint_angles(self, joint_positions, tolerance):
         if self.fake_execution:
             rospy.sleep(1.0)
             return True
 
-        arm_group = self.arm_group
         success = True
 
         # Get the current joint positions
-        joint_positions_current = arm_group.get_current_joint_values()
+        joint_positions_current = self.arm_group.get_current_joint_values()
         rospy.loginfo("Printing current joint positions before movement :")
         for p in joint_positions_current:
             rospy.loginfo(p)
@@ -91,21 +93,20 @@ class MoveItPlanner(object):
                                                                                     self.degrees_of_freedom))
             return False
 
-        arm_group.set_joint_value_target(joint_positions)
-        success &= arm_group.go(wait=True)
+        self.arm_group.set_joint_value_target(joint_positions)
+        success &= self.arm_group.go(wait=True)
 
         # Show joint positions after movement
-        new_joint_positions = arm_group.get_current_joint_values()
+        new_joint_positions = self.arm_group.get_current_joint_values()
         rospy.loginfo("Printing current joint positions after movement :")
         for p in new_joint_positions:
             rospy.loginfo(p)
         return success
 
     def get_cartesian_pose(self):
-        arm_group = self.arm_group
 
         # Get the current pose and display it
-        pose = arm_group.get_current_pose()
+        pose = self.arm_group.get_current_pose()
         rospy.loginfo("Actual cartesian pose is : ")
         rospy.loginfo(pose.pose)
 
@@ -136,8 +137,6 @@ class MoveItPlanner(object):
         if self.fake_execution:
             rospy.sleep(1.0)
             return True
-
-        gripper_group = self.gripper_group
 
         # We only have to move this joint because all others are mimic!
         gripper_joint = self.robot.get_joint(self.gripper_joint_name)

@@ -2,6 +2,7 @@
 
 import rospy
 from geometry_msgs.msg import PoseStamped
+from rocoma_msgs.srv import SwitchControllerResponse, SwitchController
 from smb_mission_planner.srv import DetectObject, DetectObjectResponse
 from smb_mission_planner.utils import ros_utils
 
@@ -28,6 +29,7 @@ base_pose_publisher = rospy.Publisher(odometry_topic, PoseStamped, queue_size=10
 # Detection Servers
 attempts = 0
 
+
 def detection_callback(req):
     global attempts
     res = DetectObjectResponse()
@@ -40,7 +42,18 @@ def detection_callback(req):
     return res
 
 
+def switch_roco_controller_service(req):
+    rospy.sleep(1.0)
+    rospy.loginfo("Switching to controller: " + str(req.name))
+    res = SwitchControllerResponse()
+    res.status = res.STATUS_SWITCHED
+    return res
+
+
 rospy.Service("/detection_service", DetectObject, detection_callback)
+rospy.Service("/smb_highlevel_controller/controller_manager/switch_controller", SwitchController,
+              switch_roco_controller_service)
+
 
 # Spin
 rospy.spin()
