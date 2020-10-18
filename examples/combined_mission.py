@@ -44,7 +44,7 @@ with state_machine:
                                         'Aborted': 'Failure',
                                         'Next Waypoint': 'REACH_DETECTION_HOTSPOT'})
 
-    smach.StateMachine.add('DETECT', ObjectDetectionWithService(max_num_failure=2, ns='detect'),
+    smach.StateMachine.add('DETECT', ObjectDetectionWithService(max_num_failure=3, ns='detect'),
                            transitions={'Completed': 'Success',
                                         'Failure': 'Failure',
                                         'Retry': 'NEW_VIEWPOINT'})

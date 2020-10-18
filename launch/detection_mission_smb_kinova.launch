@@ -17,6 +17,9 @@
     <param name="mission_file"    value="$(arg config_file_path)"/>
     <param name="move_base_topic" value="$(arg waypoint_topic_name)"/>
     <param name="odometry_topic"  value="$(arg base_pose_topic_name)"/>
+
+    <!-- For MoveGroup to work in a different namespace -->
+    <remap from="/joint_states" to="gen3/joint_states" />
   </node>
 
   <group if="$(arg enable_viewer)">

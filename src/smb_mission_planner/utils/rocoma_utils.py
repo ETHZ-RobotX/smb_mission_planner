@@ -4,6 +4,12 @@ from rocoma_msgs.srv import SwitchController, SwitchControllerRequest, SwitchCon
 
 
 def switch_roco_controller(controller_name, ns=""):
+    """
+    Switch a roco controller
+    :param controller_name:
+    :param ns: namespace of the controller manager
+    :return: if the switch succeeded or failed
+    """
     if controller_name == "":
         rospy.logwarn("Controller name is "". Could not switch.")
         return False
@@ -29,7 +35,7 @@ def switch_roco_controller(controller_name, ns=""):
         return False
 
     if res.status == SwitchControllerResponse.STATUS_RUNNING:
-        rospy.logwarn("The controlle {} is already running.".format(controller_name))
+        rospy.logwarn("The controller {} is already running.".format(controller_name))
         return True
     if res.status == SwitchControllerResponse.STATUS_SWITCHED:
         rospy.loginfo("Successfully switched to the controller {}".format(controller_name))

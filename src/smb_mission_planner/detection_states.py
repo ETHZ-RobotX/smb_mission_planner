@@ -31,6 +31,7 @@ class ObjectDetection(BaseStateRos):
         if success:
             return 'Completed'
         elif self.current_failures < self.max_num_failures:
+            self.current_failures += 1
             return 'Retry'
         else:
             return 'Failure'
@@ -40,6 +41,9 @@ class ObjectDetection(BaseStateRos):
 
 
 class ObjectDetectionWithService(ObjectDetection):
+    """
+    Specialization of base detection class working with a Service call
+    """
     def __init__(self, max_num_failure, ns=""):
         ObjectDetection.__init__(self, max_num_failure=max_num_failure, ns=ns)
         self.detection_service_name = self.get_scoped_param("detection_service_name")

@@ -4,11 +4,14 @@
   <arg name="waypoint_topic_name"   default="/move_base_simple/goal"/>
   <arg name="base_pose_topic_name"  default="/base_pose_measured"/>
   <arg name="enable_viewer"         default="false"/>
+  <arg name="fake_execution"        default="true"/>
 
-  <node pkg="smb_mission_planner" type="mock_servers.py"  name="mock_servers" output="screen">
-    <param name="move_base_topic" value="$(arg waypoint_topic_name)"/>
-    <param name="odometry_topic"  value="$(arg base_pose_topic_name)"/>
-  </node>
+  <group if="$(arg fake_execution)">
+    <node pkg="smb_mission_planner" type="mock_servers.py"  name="mock_servers" output="screen">
+      <param name="move_base_topic" value="$(arg waypoint_topic_name)"/>
+      <param name="odometry_topic"  value="$(arg base_pose_topic_name)"/>
+    </node>
+  </group>
 
   <node pkg="smb_mission_planner" type="navigation_mission.py"  name="navigation_mission" output="screen">
     <param name="mission_file"    value="$(arg config_file_path)"/>

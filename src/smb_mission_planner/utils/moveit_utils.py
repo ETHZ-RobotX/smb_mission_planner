@@ -10,11 +10,16 @@ import moveit_msgs.msg
 
 
 class MoveItPlanner(object):
-    """ExampleMoveItTrajectories"""
+    """
+    Contains all the moveit interface object which enable to send joint commands, reach a named
+    joint position or plan for the end effector cartesian/full pose goals.
+    Can be extended to contain more functionalities from moveit
+    """
 
     def __init__(self):
         moveit_commander.roscpp_initialize(sys.argv)
 
+        self.is_init_success = True
         self.fake_execution = rospy.get_param("/moveit_planner/fake_execution", False)
         rospy.loginfo("MoveItPlanner fake_execution: {}".format(self.fake_execution))
 
@@ -28,13 +33,17 @@ class MoveItPlanner(object):
                     self.gripper_joint_name = ""
                 self.degrees_of_freedom = rospy.get_param("/moveit_planner/degrees_of_freedom", 7)
 
-                # Create the MoveItInterface necessary objects
+                self.namespace = rospy.get_param("/moveit_planner/namespace")
                 self.arm_group_name = rospy.get_param("/moveit_planner/arm_group_name")
                 self.description_name = rospy.get_param("/moveit_planner/description_name")
-                self.robot = moveit_commander.RobotCommander(self.description_name)
 
-                self.namespace = rospy.get_param("/moveit_planner/namespace")
+                rospy.loginfo("Starting MoveItPlanner in namespace: {}".format(self.namespace))
+                rospy.loginfo("Loading robot named: {}".format(self.description_name))
+                rospy.loginfo("Controlling the group named: {}".format(self.arm_group_name))
+
+                # Create the MoveItInterface necessary objects
                 self.scene = moveit_commander.PlanningSceneInterface(ns=self.namespace)
+                self.robot = moveit_commander.RobotCommander(self.description_name, ns=self.namespace)
 
                 self.arm_group = moveit_commander.MoveGroupCommander(self.arm_group_name,
                                                                      robot_description=self.description_name,
@@ -54,10 +63,17 @@ class MoveItPlanner(object):
             except Exception as e:
                 print(e)
                 self.is_init_success = False
-            else:
-                self.is_init_success = True
+                rospy.logerr("Failed to initialize moveit planner")
 
     def reach_named_position(self, target):
+        """
+        :param target: name of the stored joint position (check the robot .sdf file in moveit config package)
+        :return:
+        """
+        if not self.is_init_success:
+            rospy.logerr("MoveItPlanner did not initialize correctly")
+            return False
+
         if self.fake_execution:
             rospy.sleep(1.0)
             return True
@@ -72,6 +88,16 @@ class MoveItPlanner(object):
         return self.arm_group.execute(planned_path1, wait=True)
 
     def reach_joint_angles(self, joint_positions, tolerance):
+        """
+        Self explanatory
+        :param joint_positions: target joint positions
+        :param tolerance: angular tolerance in radians
+        :return:
+        """
+        if not self.is_init_success:
+            rospy.logerr("MoveItPlanner did not initialize correctly")
+            return False
+
         if self.fake_execution:
             rospy.sleep(1.0)
             return True
@@ -104,6 +130,13 @@ class MoveItPlanner(object):
         return success
 
     def get_cartesian_pose(self):
+        """
+        Get the current cartesian pose of the tip the arm group
+        :return:
+        """
+        if not self.is_init_success:
+            rospy.logerr("MoveItPlanner did not initialize correctly")
+            return None
 
         # Get the current pose and display it
         pose = self.arm_group.get_current_pose()
@@ -113,6 +146,17 @@ class MoveItPlanner(object):
         return pose.pose
 
     def reach_cartesian_pose(self, pose, tolerance, constraints):
+        """
+        Reach a cartesian pose
+        :param pose:
+        :param tolerance:
+        :param constraints:
+        :return:
+        """
+        if not self.is_init_success:
+            rospy.logerr("MoveItPlanner did not initialize correctly")
+            return False
+
         if self.fake_execution:
             rospy.sleep(1.0)
             return True
@@ -134,6 +178,11 @@ class MoveItPlanner(object):
         return arm_group.go(wait=True)
 
     def reach_gripper_position(self, relative_position):
+        # TODO(giuseppe) untested
+        if not self.is_init_success:
+            rospy.logerr("MoveItPlanner did not initialize correctly")
+            return False
+
         if self.fake_execution:
             rospy.sleep(1.0)
             return True

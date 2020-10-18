@@ -23,7 +23,7 @@ class JointsConfigurationVisitor(BaseStateRos):
 
         self.joints_configurations = self.get_scoped_param("joints_configurations")
         self.n_configurations = len(self.joints_configurations)
-        rospy.loginfo("Parsed {} joints configurations".format(self.n_configurations))
+        rospy.loginfo("Parsed {} joints configurations: {}".format(self.n_configurations, self.joints_configurations))
 
         self.planner = MoveItPlanner()
         self.idx = 0
