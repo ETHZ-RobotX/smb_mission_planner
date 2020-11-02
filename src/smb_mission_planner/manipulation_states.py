@@ -6,20 +6,34 @@ from control_msgs.msg import GripperCommandAction, GripperCommandActionGoal
 
 from smb_mission_planner.utils import MoveItPlanner
 from smb_mission_planner.base_state_ros import BaseStateRos
+from smb_mission_planner.utils.ros_utils import switch_ros_controller
+
 """
 Here define all the navigation related states
 """
 
 
 class RosControlPoseReaching(BaseStateRos):
+    """
+    Switch and send target poses to the controller manager
+    """
     def __init__(self, ns=""):
         BaseStateRos.__init__(self,
                               outcomes=['Completed', 'Failure'],
                               input_keys=['reset'],
                               ns=ns)
 
+        self.controller_name = self.get_scoped_param("controller_name")
+        self.manager_namespace = self.get_scoped_param("manager_namespace")
+        self.whitelist = self.get_scoped_param("whitelist")
+
+    def do_switch(self):
+        return switch_ros_controller(controller_name=self.controller_name,
+                                     manager_namespace=self.manager_namespace,
+                                     whitelist=self.whitelist)
+
     def execute(self, ud):
-        rospy.logwarn("This method needs to be implemented yet")
+        rospy.logwarn("This method needs to be implemented yet. Use 'do_switch' to switch to the desired controller.")
         return 'Completed'
 
 
