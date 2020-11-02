@@ -43,6 +43,10 @@ class WaypointNavigation(BaseStateRos):
         self.estimated_y_m = 0.
         self.estimated_yaw_rad = 0.
 
+    def __del__(self):
+        self.base_pose_subscriber.unregister()
+        self.base_pose_lock.release()
+
     @staticmethod
     def read_missions_data(mission_file):
         """

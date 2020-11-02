@@ -145,7 +145,7 @@ class MoveItPlanner(object):
 
         return pose.pose
 
-    def reach_cartesian_pose(self, pose, tolerance, constraints):
+    def reach_cartesian_pose(self, pose, tolerance=1e-3, constraints=None):
         """
         Reach a cartesian pose
         :param pose:
@@ -177,24 +177,3 @@ class MoveItPlanner(object):
         rospy.loginfo("Planning and going to the Cartesian Pose")
         return arm_group.go(wait=True)
 
-    def reach_gripper_position(self, relative_position):
-        # TODO(giuseppe) untested
-        if not self.is_init_success:
-            rospy.logerr("MoveItPlanner did not initialize correctly")
-            return False
-
-        if self.fake_execution:
-            rospy.sleep(1.0)
-            return True
-
-        # We only have to move this joint because all others are mimic!
-        gripper_joint = self.robot.get_joint(self.gripper_joint_name)
-        gripper_max_absolute_pos = gripper_joint.max_bound()
-        gripper_min_absolute_pos = gripper_joint.min_bound()
-        try:
-            val = gripper_joint.move(
-                relative_position * (gripper_max_absolute_pos - gripper_min_absolute_pos) + gripper_min_absolute_pos,
-                True)
-            return val
-        except:
-            return False
