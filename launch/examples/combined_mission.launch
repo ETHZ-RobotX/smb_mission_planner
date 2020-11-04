@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <launch>
-  <arg name="config_file_path"        default="$(find smb_mission_planner)/configs/my_config.yaml"/>
+  <arg name="config_file_path"        default="$(find smb_mission_planner)/configs/examples/my_config.yaml"/>
   <arg name="waypoint_topic_name"     default="/move_base_simple/goal"/>
   <arg name="base_pose_topic_name"    default="/base_pose_measured"/>
   <arg name="enable_viewer"           default="false"/>
@@ -16,7 +16,7 @@
   </node>
 
   <!--    State dependent parameters-->
-  <rosparam command="load" file="$(find smb_mission_planner)/configs/combined_mission.yaml"/>
+  <rosparam command="load" file="$(find smb_mission_planner)/configs/examples/combined_mission.yaml"/>
 
   <node pkg="smb_mission_planner" type="combined_mission.py"  name="navigation_mission" output="screen">
     <param name="mission_file"    value="$(arg config_file_path)"/>

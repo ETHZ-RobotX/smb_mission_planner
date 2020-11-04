@@ -17,13 +17,7 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 
 
-do_plots = False
-frame_id = "world"
-distance_from_wall = 5.0
-incoming = 1  # This decides the normal direction we consider
-
-
-def planeFit(points):
+def fit_plane(points):
     """
     p, n = planeFit(points)
     Given an array, points, of shape (d,...)
@@ -41,8 +35,7 @@ def planeFit(points):
     return ctr, svd(M)[0][:,-1]
 
 
-def path_callback(path_msg):
-    rospy.loginfo("Received path on the plane")
+def nav_goal_from_path(path_msg, frame_id="world", distance_from_wall=3.0, normal_direction=1, do_plots=False):
     points = np.array([])
     for pose in path_msg.poses:
         position = np.array([pose.pose.position.x, 
@@ -54,7 +47,7 @@ def path_callback(path_msg):
             points = np.vstack((points, position))
     
     rospy.loginfo("This path has {} points".format(points.shape[0]))
-    centroid, normal = planeFit(points.T)
+    centroid, normal = fit_plane(points.T)
     
     # Compute the goal position: the goal is at a fixed distance from the 
     # centroid along the normal, with orientation such that we face the wall
@@ -62,13 +55,13 @@ def path_callback(path_msg):
     goal_msg.header.frame_id = frame_id
     goal_msg.header.stamp = rospy.Time.now()
     
-    goal_msg.pose.position.x = incoming * distance_from_wall * normal[0] + centroid[0]
-    goal_msg.pose.position.y = incoming * distance_from_wall * normal[1] + centroid[1]
-    goal_msg.pose.position.z = incoming * distance_from_wall * normal[2] + centroid[2]
+    goal_msg.pose.position.x = normal_direction * distance_from_wall * normal[0] + centroid[0]
+    goal_msg.pose.position.y = normal_direction * distance_from_wall * normal[1] + centroid[1]
+    goal_msg.pose.position.z = normal_direction * distance_from_wall * normal[2] + centroid[2]
     
     # Since the path is in CAD world frame, we can project the normal on the 
     # (x,y) plane and compute the yaw from that.
-    normal_xy = incoming * normal[0:2] / np.linalg.norm(normal[0:2])
+    normal_xy = -normal_direction * normal[0:2] / np.linalg.norm(normal[0:2])
     yaw = math.atan2(normal_xy[1], normal_xy[0])
     rot = Rotation.from_euler('xyz', [0, 0, yaw], degrees=False)
     rot_quat = rot.as_quat()
@@ -76,9 +69,7 @@ def path_callback(path_msg):
     goal_msg.pose.orientation.y = rot_quat[1]
     goal_msg.pose.orientation.z = rot_quat[2]
     goal_msg.pose.orientation.w = rot_quat[3]
-    
-    goal_pub.publish(goal_msg)
-    
+
     # Inform user
     rospy.loginfo("Plane Centroid: {}".format(centroid))
     rospy.loginfo("Plane Normal  : {}".format(normal))
@@ -95,27 +86,20 @@ def path_callback(path_msg):
         ax.set_xlabel('X'), ax.set_ylabel('Y'), ax.set_zlabel('Z')
         plt.show()
 
+    return goal_msg
+
+
+def test_callback(msg):
+    goal = nav_goal_from_path(msg, "world", 3.0, 1, False)
+    goal_pub.publish(goal)
+
 
 if __name__ == '__main__':
     try:
         rospy.init_node('goal_from_plane', anonymous=True)
         
-        # Parameters
-        if rospy.has_param('~frame_id'):
-            frame_id = rospy.get_param("~frame_id")
-            
-        if rospy.has_param('~distance_from_wall'):
-            distance_from_wall = rospy.get_param("~distance_from_wall")
-            
-        if rospy.has_param('~incoming'):
-            incoming = rospy.get_param("~incoming")
-            assert(incoming == 1 or incoming == -1)
-            
-        if rospy.has_param('~do_plots'):
-            do_plots = rospy.get_param("~do_plots")
-        
         # Subscribers and Publishers
-        path_sub = rospy.Subscriber("input_path", Path, path_callback)
+        path_sub = rospy.Subscriber("input_path", Path, test_callback)
         goal_pub = rospy.Publisher('goal', PoseStamped, queue_size=10,)
         rospy.loginfo("Waiting for path message...")
         rospy.spin()

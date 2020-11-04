@@ -154,3 +154,99 @@ class WaypointNavigation(BaseStateRos):
         except:
             rospy.logwarn("No estimated base pose received yet.")
             return False
+
+
+class SingleNavGoalState(BaseStateRos):
+    """
+    In this state the robot navigates to a single goal"""
+
+    def __init__(self, ns=""):
+        BaseStateRos.__init__(self, outcomes=['Completed', 'Aborted'], ns=ns)
+
+        self.goal_pose_topic = self.get_scoped_param("goal_pose_topic")
+        self.base_pose_topic = self.get_scoped_param("base_pose_topic")
+        self.goal_publisher = rospy.Publisher(self.goal_pose_topic, PoseStamped, queue_size=10)
+        self.base_pose_subscriber = rospy.Subscriber(self.base_pose_topic, PoseStamped, self.base_pose_callback)
+
+        self.roco_controller = self.get_scoped_param("roco_controller")
+        self.timeout = self.get_scoped_param("timeout")
+        self.tolerance_m = self.get_scoped_param("tolerance_m")
+        self.tolerance_rad = self.get_scoped_param("tolerance_deg") * math.pi / 180.0
+
+        self.goal = None
+        self.base_x = 0.0
+        self.base_y = 0.0
+        self.base_yaw_rad = 0.0
+
+        self.base_pose_lock = Lock()
+        self.base_pose_received = False
+
+    def __del__(self):
+        self.base_pose_subscriber.unregister()
+        self.base_pose_lock.release()
+
+    def reach_goal(self, goal):
+        if not isinstance(goal, PoseStamped):
+            rospy.logerr("The goal needs to be specified as a PoseStamped message")
+            return False
+
+        success = rocoma_utils.switch_roco_controller("MpcTrackLocalPlan", ns=self.roco_controller)
+        if not success:
+            rospy.logerr("Could not execute the navigation plan")
+            return False
+
+        while not self.goal_publisher.get_num_connections():
+            rospy.loginfo_throttle(1.0, "Waiting for subscriber to connect to waypoint topic")
+
+        self.goal_publisher.publish(goal)
+        self.goal = goal
+        start_time = rospy.get_rostime().to_sec()
+        elapsed_time = 0
+        while not rospy.is_shutdown():
+            if self.reached_waypoint_with_tolerance() and elapsed_time < self.timeout:
+                rospy.loginfo("Goal reached")
+                return True
+            elif elapsed_time >= self.timeout:
+                rospy.logerr("Timeout reached while reaching the goal")
+                return False
+            else:
+                rospy.loginfo_throttle(3.0, "Reaching the goal ... {} s to timeout".format(self.timeout-elapsed_time))
+                rospy.sleep(1.0)
+            elapsed_time = rospy.get_rostime().to_sec() - start_time
+
+    def execute(self, userdata):
+        raise NotImplementedError("This function needs to be implemented")
+
+    def base_pose_callback(self, pose_stamped_msg):
+        self.base_pose_lock.acquire()
+        rospy.loginfo_once("Estimated base pose received from now on.")
+
+        x_m = pose_stamped_msg.pose.position.x
+        y_m = pose_stamped_msg.pose.position.y
+        quaternion = pose_stamped_msg.pose.orientation
+        explicit_quat = [quaternion.x, quaternion.y, quaternion.z, quaternion.w]
+        roll_rad, pitch_rad, yaw_rad = tf.transformations.euler_from_quaternion(explicit_quat)
+
+        self.base_x = x_m
+        self.base_y = y_m
+        self.base_yaw_rad = yaw_rad
+        self.base_pose_received = True
+        self.base_pose_lock.release()
+
+    def reached_waypoint_with_tolerance(self):
+        lin_tol_ok = False
+        ang_tol_ok = False
+        self.base_pose_lock.acquire()
+        if self.base_pose_received:
+            distance_to_waypoint = math.sqrt(pow(self.goal.pose.position.x - self.base_x, 2) +
+                                             pow(self.goal.pose.position.y - self.base_y, 2))
+
+            _, _, goal_yaw = tf.transformations.euler_from_quaternion([self.goal.pose.orientation.x,
+                                                                       self.goal.pose.orientation.y,
+                                                                       self.goal.pose.orientation.z,
+                                                                       self.goal.pose.orientation.w])
+            angle_to_waypoint = abs(self.base_yaw_rad - self.goal_yaw)
+            lin_tol_ok = (distance_to_waypoint <= self.tolerance_m)
+            ang_tol_ok = (angle_to_waypoint <= self.tolerance_rad)
+        self.base_pose_lock.release()
+        return lin_tol_ok and ang_tol_ok and self.base_pose_received

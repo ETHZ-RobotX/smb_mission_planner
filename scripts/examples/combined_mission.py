@@ -66,9 +66,10 @@ with state_machine:
                            transitions={'Completed': 'EXECUTE_EE_TRAJECTORY',
                                         'Failure': 'Failure'})
 
-    smach.StateMachine.add('EXECUTE_EE_TRAJECTORY', RosControlPoseReaching(ns='execute_ee_trajectory'),
-                           transitions={'Completed': 'Success',
-                                        'Failure': 'Failure'})
+    # TODO(giuseppe) test with the global context
+    #smach.StateMachine.add('EXECUTE_EE_TRAJECTORY', RosControlPoseReaching(ns='execute_ee_trajectory'),
+    #                       transitions={'Completed': 'Success',
+    #                                    'Failure': 'Failure'})
 
 # Create and start the introspection server
 introspection_server = smach_ros.IntrospectionServer('mission_server', state_machine, '/mission_planner')

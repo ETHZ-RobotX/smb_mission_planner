@@ -64,6 +64,7 @@ class BaseStateRos(smach.State):
         if key in self.global_context.data.keys():
             return self.global_context.data[key]
         else:
+            rospy.logwarn("Failed to retrieve [{}] from data".format(key))
             return None
 
 

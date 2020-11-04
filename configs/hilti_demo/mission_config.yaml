@@ -1,0 +1,25 @@
+# Config file for the combined mission
+# Namespaces mirror (optionally) the state for better readability
+
+mission_start:
+  path_topic_name: /mabi_highlevel_controller/path_direct
+  timeout: 10.0
+
+nav_to_wall:
+  distance_from_wall: 3.0
+  normal_direction: 1   # can be either 1 or -1
+  goal_pose_topic: /move_base_simple/goal
+  base_pose_topic: /base_pose_measured
+  roco_controller: MpcTrackLocalPlan
+  timeout: 30.0
+  tolerance_m: 0.3
+  tolerance_deg: 10
+
+hal:
+  timeout: 10.0
+
+init_grinding:
+  timeout: 10.0
+
+grinding:
+  timeout: 10.0
