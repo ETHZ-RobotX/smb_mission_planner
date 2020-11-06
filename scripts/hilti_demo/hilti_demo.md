@@ -3,7 +3,7 @@
 This folder contains the scripts implementing the state machine for the HILTI demo. 
 A summary of the current development status of the state machine is contained in this [live document](https://docs.google.com/drawings/d/1Y1SLJT0B-n-dx-Pc8aVBVGNic1gciBG6ic9OO73MfFA/edit?usp=sharing).
 
-The states' implementation can be found [here](../../src/smb_mission_planner/grinding_mission).
+The states' implementation can be found [here](../../src/smb_mission_planner/grinding_mission/demo_states.py).
  
 Each state has its own set of parameters which is defined centrally in a mission config file. 
 Each state is namespaced and parameters should be set in this namespace. It is a good practice to have
