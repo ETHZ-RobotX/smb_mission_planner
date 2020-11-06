@@ -1,5 +1,6 @@
 # Config file for the combined mission
 # Namespaces mirror (optionally) the state for better readability
+# !!! Modify with care !!!
 
 mission_start:
   path_topic_name: /mabi_highlevel_controller/path_direct
@@ -7,16 +8,38 @@ mission_start:
 
 nav_to_wall:
   distance_from_wall: 3.0
-  normal_direction: 1   # can be either 1 or -1
+  normal_direction: -1                        # can be either 1 or -1
   goal_pose_topic: /move_base_simple/goal
   base_pose_topic: /base_pose_measured
   roco_controller: MpcTrackLocalPlan
-  timeout: 30.0
-  tolerance_m: 0.3
-  tolerance_deg: 10
+  controller_manager_namespace: /smb_highlevel_controller
+  timeout: 30.0                               # max time to reach the goal within accuracy
+  tolerance_m: 0.3                            # position accuracy (meters)
+  tolerance_deg: 10                           # position accuracy (degrees)
 
-hal:
+arm_recorded_motion:
+  timeout: 2.0                                # max time before considering the pose reached
+  roco_controller: to_define                  # desired roco controller TODO fill here
+  controller_manager_namespace: /smb_highlevel_controller
+  pose_topic_name: /pose_topic_name           # TODO fill here
+  frame_id: world                             # in which frame the poses are defined
+  poses:                                      # list of target poses in format t: [x, y, z], q: [qx, qy, qz, qw]
+    - t: [0.0, 0.0, 0.0]
+      q: [0.0, 0.0, 0.0, 1.0]
+    - t: [0.2, 1.0, 3.0]
+      q: [0.0, 0.0, 0.707, 0.707]
+
+hal_data_collection:
+  service_name: /hal_take_measurement
   timeout: 10.0
+
+hal_optimization:
+  hal_optimization_service_name: /high_accuracy_localize
+  hal_update_topic_name: /building_task_manager/task_offset_target_pose
+  confusor_update_service_name: /to_define
+  hal_timeout: 10.0                           # max time to wait for the service to be advertised
+  confusor_timeout: 10.0                      # max time to wait for the service to be advertised
+  hal_update_timeout: 10.0                    # max time to wait for the hal update message (sent then to confusor)
 
 init_grinding:
   timeout: 10.0

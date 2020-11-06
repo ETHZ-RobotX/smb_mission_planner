@@ -168,7 +168,9 @@ class SingleNavGoalState(BaseStateRos):
         self.goal_publisher = rospy.Publisher(self.goal_pose_topic, PoseStamped, queue_size=10)
         self.base_pose_subscriber = rospy.Subscriber(self.base_pose_topic, PoseStamped, self.base_pose_callback)
 
-        self.roco_controller = self.get_scoped_param("roco_controller")
+        self.controller = self.get_scoped_param("roco_controller")
+        self.controller_manager_namespace = self.get_scoped_param("controller_manager_namespace")
+
         self.timeout = self.get_scoped_param("timeout")
         self.tolerance_m = self.get_scoped_param("tolerance_m")
         self.tolerance_rad = self.get_scoped_param("tolerance_deg") * math.pi / 180.0
@@ -190,7 +192,8 @@ class SingleNavGoalState(BaseStateRos):
             rospy.logerr("The goal needs to be specified as a PoseStamped message")
             return False
 
-        success = rocoma_utils.switch_roco_controller("MpcTrackLocalPlan", ns=self.roco_controller)
+        success = rocoma_utils.switch_roco_controller(self.controller,
+                                                      ns=self.controller_manager_namespace)
         if not success:
             rospy.logerr("Could not execute the navigation plan")
             return False
@@ -245,7 +248,7 @@ class SingleNavGoalState(BaseStateRos):
                                                                        self.goal.pose.orientation.y,
                                                                        self.goal.pose.orientation.z,
                                                                        self.goal.pose.orientation.w])
-            angle_to_waypoint = abs(self.base_yaw_rad - self.goal_yaw)
+            angle_to_waypoint = abs(self.base_yaw_rad - goal_yaw)
             lin_tol_ok = (distance_to_waypoint <= self.tolerance_m)
             ang_tol_ok = (angle_to_waypoint <= self.tolerance_rad)
         self.base_pose_lock.release()

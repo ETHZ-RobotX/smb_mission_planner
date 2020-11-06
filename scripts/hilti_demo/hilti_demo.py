@@ -4,6 +4,8 @@ import smach
 import smach_ros
 from smb_mission_planner.grinding_mission.demo_states import *
 
+rospy.init_node('hilti_demo')
+
 # Build the state machine
 state_machine = smach.StateMachine(outcomes=['Success', 'Failure'])
 with state_machine:
@@ -12,10 +14,19 @@ with state_machine:
                                         'Aborted': 'Failure'})
 
     smach.StateMachine.add('NAV_TO_WALL', NavigateToWall(ns="nav_to_wall"),
-                           transitions={'Completed': 'HAL',
+                           transitions={'Completed': 'ARM_RECORDED_MOTION',
                                         'Aborted': 'Failure'})
 
-    smach.StateMachine.add('HAL', HighAccuracyLocalization(ns="hal"),
+    smach.StateMachine.add('ARM_RECORDED_MOTION', ArmPosesVisitor(ns="arm_recorded_motion"),
+                           transitions={'PoseReached': 'HAL_DATA_COLLECTION',
+                                        'NoMorePoses': 'HAL_OPTIMIZATION',
+                                        'Aborted': 'Failure'})
+
+    smach.StateMachine.add('HAL_DATA_COLLECTION', HALDataCollection(ns="hal_data_collection"),
+                           transitions={'Completed': 'ARM_RECORDED_MOTION',
+                                        'Aborted': 'Failure'})
+
+    smach.StateMachine.add('HAL_OPTIMIZATION', HALOptimization(ns="hal_optimization"),
                            transitions={'Completed': 'INIT_GRINDING',
                                         'Aborted': 'Failure'})
 
@@ -24,7 +35,7 @@ with state_machine:
                                         'Aborted': 'Failure'})
 
     smach.StateMachine.add('DO_GRINDING', DoGrinding(ns="grinding"),
-                           transitions={'Completed': '',
+                           transitions={'Completed': 'Success',
                                         'Aborted': 'Failure'})
 
 

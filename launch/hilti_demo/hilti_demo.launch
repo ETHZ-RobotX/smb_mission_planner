@@ -1,16 +1,19 @@
 <?xml version="1.0"?>
 <launch>
-  <arg name="path_generation"         default="false"/>
+  <arg name="mock_modules"            default="false"/>
   <arg name="enable_viewer"           default="true"/>
 
-  <!--    State dependent parameters-->
+
+  <!-- Mission planner aka state machine -->
   <arg name="config_file_path"        default="$(find smb_mission_planner)/configs/hilti_demo/mission_config.yaml"/>
   <rosparam command="load" file="$(arg config_file_path)"/>
-
   <node pkg="smb_mission_planner" type="hilti_demo.py"  name="hilti_demo" output="screen"/>
 
-  <group if="$(arg path_generation)">
-    <node pkg="smb_mission_planner" type="path_generator.py"  name="path_generator" output="screen"/>
+
+  <group if="$(arg mock_modules)">
+    <include file="$(find smb_mission_planner)/launch/hilti_demo/hilti_mock_modules.launch">
+      <arg name="rviz" value="true"/>
+    </include>
   </group>
 
   <group if="$(arg enable_viewer)">
