@@ -2,7 +2,8 @@
 import rospy
 from std_srvs.srv import Empty, EmptyResponse
 
-from geometry_msgs.msg import PoseStamped
+from cpt_pointlaser_msgs.srv import HighAccuracyLocalizationResponse, HighAccuracyLocalization
+from geometry_msgs.msg import PoseStamped, Pose
 from rocoma_msgs.srv import SwitchControllerResponse, SwitchController
 
 
@@ -43,9 +44,9 @@ def hal_data_callback(_):
 def hal_optimization_callback(_):
     rospy.loginfo("Received a hal data collection request. Sleeping 1.0 sec and then sending the update")
     rospy.sleep(1.0)
-    hal_update = PoseStamped()
-    hal_update_publisher.publish(hal_update)
-    return EmptyResponse()
+    hal_response = HighAccuracyLocalizationResponse()
+    hal_response.corrected_base_pose_in_world = Pose()
+    return hal_response
 
 
 def confusor_callback(_):
@@ -66,7 +67,6 @@ if __name__ == "__main__":
 
     hal_optimization_service_name = rospy.get_param("~hal_optimization_service_name")
     hal_data_collection_service_name = rospy.get_param("~hal_data_collection_service_name")
-    hal_update_topic_name = rospy.get_param("~hal_update_topic_name")
 
     confusor_service_name = rospy.get_param("~confusor_service_name")
 
@@ -79,9 +79,8 @@ if __name__ == "__main__":
                                  SwitchController,
                                  switch_roco_controller_service)
 
-    hal_update_publisher = rospy.Publisher(hal_update_topic_name, PoseStamped, queue_size=1)
     hal_data_service = rospy.Service(hal_data_collection_service_name, Empty, hal_data_callback)
-    hal_optm_service = rospy.Service(hal_optimization_service_name, Empty, hal_optimization_callback)
+    hal_optm_service = rospy.Service(hal_optimization_service_name, HighAccuracyLocalization, hal_optimization_callback)
     confusor_service = rospy.Service(confusor_service_name, Empty, confusor_callback)
 
     # Spin

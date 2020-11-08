@@ -5,6 +5,8 @@ from std_srvs.srv import Empty
 from nav_msgs.msg import Path
 from geometry_msgs.msg import PoseStamped
 
+from cpt_pointlaser_msgs.srv import HighAccuracyLocalization, HighAccuracyLocalizationRequest, HighAccuracyLocalizationResponse
+
 from smb_mission_planner.base_state_ros import BaseStateRos
 from smb_mission_planner.navigation_states import SingleNavGoalState
 from smb_mission_planner.utils.navigation_utils import nav_goal_from_path
@@ -177,23 +179,20 @@ class HALDataCollection(BaseStateRos):
 
 class HALOptimization(BaseStateRos):
     """
-    Triggers the HAL 0optimization routine and send the received pose update to confusor for the state
+    Triggers the HAL Optimization routine and send the received pose update to confusor for the state
     estimation update
     """
     def __init__(self, ns):
         BaseStateRos.__init__(self, outcomes=['Completed', 'Aborted'], ns=ns)
         hal_optimization_service_name = self.get_scoped_param("hal_optimization_service_name")
-        update_topic_name = self.get_scoped_param("hal_update_topic_name")
         confusor_service_name = self.get_scoped_param("confusor_update_service_name")
 
         self.hal_timeout = self.get_scoped_param("hal_timeout")
         self.hal_update_timeout = self.get_scoped_param("hal_update_timeout")
         self.confusor_timeout = self.get_scoped_param("confusor_timeout")
 
-        self.update_subscriber = rospy.Subscriber(update_topic_name, PoseStamped, self.update_cb, queue_size=1)
-        self.hal_service_client = rospy.ServiceProxy(hal_optimization_service_name, Empty)
+        self.hal_service_client = rospy.ServiceProxy(hal_optimization_service_name, HighAccuracyLocalization)
         self.confusor_service_client = rospy.ServiceProxy(confusor_service_name, Empty)
-        self.confusor_updated = False
 
     def execute(self, ud):
         try:
@@ -208,25 +207,13 @@ class HALOptimization(BaseStateRos):
             rospy.logerr(exc)
             return 'Aborted'
 
-        # TODO(giuseppe) better to receive the update in the answer
-        self.hal_service_client.call()
+        hal_req = HighAccuracyLocalizationRequest()
+        hal_res = self.hal_service_client.call(hal_req)
+        rospy.loginfo("Update base pose in world frame is: {}".format(hal_res.corrected_base_pose_in_world))
 
-        elapsed = 0
-        while elapsed < self.hal_update_timeout:
-            if self.confusor_updated:
-                return 'Completed'
-            else:
-                rospy.sleep(0.1)
-                elapsed += 0.1
-
-        rospy.logerr("Failed to update confusor")
-        return 'Aborted'
-
-    def update_cb(self, update):
-        rospy.loginfo("Received new update from HAL routine, sending to Confusor")
-        rospy.logwarn("Need to implement the actual confusor service")
+        # TODO(giuseppe) use the correct confusor service class and pass the hal response to it
         self.confusor_service_client.call()
-        self.confusor_updated = True
+        return 'Completed'
 
 
 class InitializeGrinding(BaseStateRos):

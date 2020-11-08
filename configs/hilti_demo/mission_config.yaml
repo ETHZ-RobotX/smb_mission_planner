@@ -35,7 +35,6 @@ hal_data_collection:
 
 hal_optimization:
   hal_optimization_service_name: /high_accuracy_localize
-  hal_update_topic_name: /building_task_manager/task_offset_target_pose
   confusor_update_service_name: /to_define
   hal_timeout: 10.0                           # max time to wait for the service to be advertised
   confusor_timeout: 10.0                      # max time to wait for the service to be advertised

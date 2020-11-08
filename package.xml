@@ -25,4 +25,5 @@
   <depend>geometry_msgs</depend>
   <depend>controller_manager_msgs</depend>
   <depend>control_msgs</depend>
+  <depend>cpt_pointlaser_msgs</depend>
 </package>
