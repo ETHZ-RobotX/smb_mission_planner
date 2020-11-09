@@ -32,6 +32,14 @@ with state_machine:
                                             'Aborted': 'Failure'})
 
         smach.StateMachine.add('INIT_GRINDING', InitializeGrinding(ns="init_grinding"),
+                               transitions={'Completed': 'GRINDING_POSITIONING',
+                                            'Aborted': 'Failure'})
+
+        smach.StateMachine.add('GRINDING_POSITIONING', InitialPositioning(ns="grinding_positioning"),
+                               transitions={'Completed': 'MOVE_INTO_CONTACT',
+                                            'Aborted': 'Failure'})
+
+        smach.StateMachine.add('MOVE_INTO_CONTACT', MoveIntoContact(ns="move_into_contact"),
                                transitions={'Completed': 'DO_GRINDING',
                                             'Aborted': 'Failure'})
 

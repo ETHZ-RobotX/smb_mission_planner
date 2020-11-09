@@ -1,12 +1,16 @@
 #!/usr/bin/env python2
 import rospy
+import tf2_ros
 import actionlib
+import numpy as np
+from nav_msgs.msg import Path
 from geometry_msgs.msg import PoseStamped
 from control_msgs.msg import GripperCommandAction, GripperCommandActionGoal
 
 from smb_mission_planner.utils import MoveItPlanner
 from smb_mission_planner.base_state_ros import BaseStateRos
 from smb_mission_planner.utils.ros_utils import switch_ros_controller
+from smb_mission_planner.utils import rocoma_utils
 
 """
 Here define all the navigation related states
@@ -181,3 +185,71 @@ class GripperControl(BaseStateRos):
             return 'Failure'
         else:
             return 'Completed'
+
+
+class EndEffectorRocoControl(BaseStateRos):
+    """
+    """
+    def __init__(self, ns, outcomes=['Completed', 'Aborted']):
+        BaseStateRos.__init__(self, outcomes=outcomes, ns=ns)
+        self.timeout = self.get_scoped_param("timeout")
+        self.controller = self.get_scoped_param("roco_controller")
+        self.controller_manager_namespace = self.get_scoped_param("controller_manager_namespace")
+        self.ee_frame = self.get_scoped_param("end_effector_frame_id")
+        self.reference_frame = self.get_scoped_param("reference_frame_id")
+
+        pose_topic_name = self.get_scoped_param("path_topic_name")
+        self.path_publisher = rospy.Publisher(pose_topic_name, Path, queue_size=1)
+        self.tf_buffer = tf2_ros.Buffer()
+        self.tf_listener = tf2_ros.TransformListener(self.tf_buffer)
+
+    def switch_controller(self):
+        success = rocoma_utils.switch_roco_controller(self.controller,
+                                                      ns=self.controller_manager_namespace)
+        return success
+
+    def get_end_effector_pose(self):
+        try:
+            trans = self.tf_buffer.lookup_transform(self.reference_frame, self.ee_frame, rospy.Time())
+            ee_pose = PoseStamped()
+            ee_pose.header.frame_id = self.reference_frame
+            ee_pose.pose.position.x = trans.transform.translation.x
+            ee_pose.pose.position.y = trans.transform.translation.y
+            ee_pose.pose.position.z = trans.transform.translation.z
+            ee_pose.pose.orientation.x = trans.transform.rotation.x
+            ee_pose.pose.orientation.y = trans.transform.rotation.y
+            ee_pose.pose.orientation.z = trans.transform.rotation.z
+            ee_pose.pose.orientation.w = trans.transform.rotation.w
+            return ee_pose
+        except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException) as exc:
+            rospy.logerr("Failed to query ee transform: {}".format(exc))
+            return None
+
+    @staticmethod
+    def parse_pose(pose_dictionary):
+        if 't' not in pose_dictionary.keys() or 'q' not in pose_dictionary.keys():
+            rospy.logerr("poses param is ill-formed")
+            return None
+
+        if len(pose_dictionary['t']) != 3 or len(pose_dictionary['q']) != 4:
+            rospy.logerr("poses param is ill-formed")
+            return None
+
+        q_arr = np.array(pose_dictionary['q'])
+        norm = np.linalg.norm(q_arr)
+        if norm > 1.01 or norm < 0.99:
+            rospy.logerr("pose quaternion is not normalized")
+            return None
+
+        pose = PoseStamped()
+        pose.pose.position.x = pose_dictionary['t'][0]
+        pose.pose.position.y = pose_dictionary['t'][1]
+        pose.pose.position.z = pose_dictionary['t'][2]
+        pose.pose.orientation.x = pose_dictionary['q'][0]
+        pose.pose.orientation.y = pose_dictionary['q'][1]
+        pose.pose.orientation.z = pose_dictionary['q'][2]
+        pose.pose.orientation.w = pose_dictionary['q'][3]
+        return pose
+
+    def execute(self, ud):
+        raise NotImplementedError("The execute method ot the EndEffectorRocoControl must be implemented yet.")

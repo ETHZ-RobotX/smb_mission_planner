@@ -12,18 +12,20 @@ nav_to_wall:
   goal_pose_topic: /move_base_simple/goal
   base_pose_topic: /base_pose_measured
   roco_controller: MpcTrackLocalPlan
-  controller_manager_namespace: /smb_highlevel_controller
+  controller_manager_namespace: /mabi_mobile_highlevel_controller
   timeout: 30.0                               # max time to reach the goal within accuracy
   tolerance_m: 0.3                            # position accuracy (meters)
   tolerance_deg: 10                           # position accuracy (degrees)
 
 arm_recorded_motion:
-  timeout: 2.0                                # max time before considering the pose reached
-  roco_controller: to_define                  # desired roco controller TODO fill here
-  controller_manager_namespace: /smb_highlevel_controller
-  pose_topic_name: /pose_topic_name           # TODO fill here
-  frame_id: world                             # in which frame the poses are defined
-  poses:                                      # list of target poses in format t: [x, y, z], q: [qx, qy, qz, qw]
+  timeout: 10.0                                                   # max time before considering the pose reached
+  roco_controller: MabiMobileCombinedController                   # desired roco controller
+  controller_manager_namespace: /mabi_mobile_highlevel_controller
+  path_topic_name: mabi_mobile_highlevel_controller/MabiMobileCombinedController/external_path
+
+  reference_frame_id: base
+  end_effector_frame_id: end_effector
+  poses:                                                          # list of target poses in format t: [x, y, z], q: [qx, qy, qz, qw]
     - t: [0.0, 0.0, 0.0]
       q: [0.0, 0.0, 0.0, 1.0]
     - t: [0.2, 1.0, 3.0]
@@ -42,6 +44,22 @@ hal_optimization:
 
 init_grinding:
   timeout: 10.0
+
+grinding_positioning:
+  timeout: 10.0                                                   # max time before considering the pose reached
+  roco_controller: MabiMobileCombinedController                   # desired roco controller
+  controller_manager_namespace: /mabi_mobile_highlevel_controller
+  path_topic_name: mabi_mobile_highlevel_controller/MabiMobileCombinedController/external_path
+
+  reference_frame_id: base
+  end_effector_frame_id: end_effector
+
+  offset:
+    t: [0.0, 0.0, 0.0]
+    q: [0.0, 0.0, 0.0, 1.0]
+
+move_into_contact:
+  key: value
 
 grinding:
   timeout: 10.0

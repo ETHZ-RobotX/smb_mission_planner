@@ -1,16 +1,14 @@
-import numpy as np
-
 import rospy
+import copy
 from std_srvs.srv import Empty
 from nav_msgs.msg import Path
 from geometry_msgs.msg import PoseStamped
 
-from cpt_pointlaser_msgs.srv import HighAccuracyLocalization, HighAccuracyLocalizationRequest, HighAccuracyLocalizationResponse
-
+from cpt_pointlaser_msgs.srv import HighAccuracyLocalization, HighAccuracyLocalizationRequest
 from smb_mission_planner.base_state_ros import BaseStateRos
 from smb_mission_planner.navigation_states import SingleNavGoalState
+from smb_mission_planner.manipulation_states import EndEffectorRocoControl
 from smb_mission_planner.utils.navigation_utils import nav_goal_from_path
-from smb_mission_planner.utils import rocoma_utils
 
 
 class MissionStarter(BaseStateRos):
@@ -75,7 +73,7 @@ class NavigateToWall(SingleNavGoalState):
             return 'Aborted'
 
 
-class ArmPosesVisitor(BaseStateRos):
+class ArmPosesVisitor(EndEffectorRocoControl):
     """
     Visits a sequence of poses for the end effector. Whenever this state is accessed again (because of a loop
     in the state machine), the next pose is sent as a target. Since the receiving controller does not implement a
@@ -90,44 +88,27 @@ class ArmPosesVisitor(BaseStateRos):
 
     """
     def __init__(self, ns):
-        BaseStateRos.__init__(self, outcomes=['PoseReached', 'Aborted', 'NoMorePoses'], ns=ns)
-        self.timeout = self.get_scoped_param("timeout")
-        self.controller = self.get_scoped_param("roco_controller")
-        self.controller_manager_namespace = self.get_scoped_param("controller_manager_namespace")
-        self.frame = self.get_scoped_param("frame_id")
+        EndEffectorRocoControl.__init__(self, ns=ns, outcomes=['PoseReached', 'NoMorePoses', 'Aborted'])
         self.poses = self.get_scoped_param("poses")
+        self.poses_ros = []
         self.pose_idx = 0
         self.num_poses = len(self.poses)
 
-        self.ok = self.check_poses()
-
-        pose_topic_name = self.get_scoped_param("pose_topic_name")
-        self.pose_publisher = rospy.Publisher(pose_topic_name, PoseStamped, queue_size=1)
-
     def check_poses(self):
         for pose in self.poses:
-            if 't' not in pose.keys() or 'q' not in pose.keys():
-                rospy.logerr("poses param is ill-formed")
+            self.poses_ros.append(self.parse_pose(pose))
+            if not self.poses[-1]:
                 return False
 
-            if len(pose['t']) != 3 or len(pose['q']) != 4:
-                rospy.logerr("poses param is ill-formed")
-                return False
-
-            q_arr = np.array(pose['q'])
-            norm = np.linalg.norm(q_arr)
-            if norm > 1.01 or norm < 0.99:
-                rospy.logerr("pose quaternion is not normalized")
-                return False
         return True
 
     def execute(self, ud):
-        if not self.ok:
+        if not self.check_poses():
             rospy.logerr("The poses list is ill-formed, aborting...")
             return 'Aborted'
 
-        success = rocoma_utils.switch_roco_controller(self.controller,
-                                                      ns=self.controller_manager_namespace)
+        success = self.switch_controller()
+
         if not success:
             rospy.logerr("ArmPoseVisitor failed")
             return 'Aborted'
@@ -136,19 +117,29 @@ class ArmPosesVisitor(BaseStateRos):
             rospy.loginfo("No more target poses!")
             return 'NoMorePoses'
 
-        new_pose = PoseStamped()
-        new_pose.header.frame_id = self.frame
-        new_pose.header.stamp = rospy.get_rostime()
-        new_pose.pose.position.x = self.poses[self.pose_idx]['t'][0]
-        new_pose.pose.position.y = self.poses[self.pose_idx]['t'][1]
-        new_pose.pose.position.z = self.poses[self.pose_idx]['t'][2]
-        new_pose.pose.orientation.x = self.poses[self.pose_idx]['q'][0]
-        new_pose.pose.orientation.y = self.poses[self.pose_idx]['q'][1]
-        new_pose.pose.orientation.z = self.poses[self.pose_idx]['q'][2]
-        new_pose.pose.orientation.w = self.poses[self.pose_idx]['q'][3]
+        goal_path = Path()
+        goal_path.header.stamp = rospy.get_rostime()
+        goal_path.header.frame_id = self.reference_frame
+
+        # get current end effector pose
+        current_pose = self.get_end_effector_pose()
+        if not current_pose:
+            return 'Aborted'
+
+        goal_pose = PoseStamped()
+        goal_pose.header.frame_id = self.reference_frame
+        goal_pose.header.stamp = rospy.get_rostime()
+        goal_pose.pose = self.poses_ros[self.pose_idx]
+
+        # same time, let mpc decide the timing
+        current_pose.header.stamp = rospy.get_rostime()
+        goal_path.poses.append(current_pose)
+
+        goal_pose.header.stamp = rospy.get_rostime()
+        goal_path.poses.append(goal_pose)
 
         rospy.loginfo("Publishing pose {}".format(self.pose_idx))
-        self.pose_publisher.publish(new_pose)
+        self.path_publisher.publish(goal_path)
 
         rospy.loginfo("Waiting {} before switch".format(self.timeout))
         rospy.sleep(self.timeout)
@@ -226,6 +217,64 @@ class InitializeGrinding(BaseStateRos):
 
     def execute(self, ud):
         rospy.logwarn("The execution of the InitializeGrinding state needs to be implemented. Sleeping for 3.0 s")
+        rospy.sleep(3.0)
+        return 'Completed'
+
+
+class InitialPositioning(EndEffectorRocoControl):
+    """
+    """
+    def __init__(self, ns):
+        EndEffectorRocoControl.__init__(self, ns=ns)
+        self.offset = self.get_scoped_param("offset")
+
+    def execute(self, ud):
+        if not self.switch_controller():
+            rospy.logerr("InitialPositioning failed: failed to switch controller")
+            return 'Aborted'
+
+        goal_path = Path()
+        goal_path.header.stamp = rospy.get_rostime()
+        goal_path.header.frame_id = self.reference_frame
+
+        # get current end effector pose
+        current_pose = self.get_end_effector_pose()
+        if not current_pose:
+            return 'Aborted'
+
+        goal_pose = PoseStamped()
+        goal_pose.header.frame_id = self.reference_frame
+        goal_pose.header.stamp = rospy.get_rostime()
+
+        # get the first pose in the task path.
+        goal_pose = copy.deepcopy(self.get_context_data("grinding_path"))
+        if not goal_pose:
+            rospy.logwarn("Could not get the first pose from the grinding path")
+
+        # same time, let mpc decide the timing
+        current_pose.header.stamp = rospy.get_rostime()
+        goal_path.poses.append(current_pose)
+
+        goal_pose.header.stamp = rospy.get_rostime()
+        goal_path.poses.append(goal_pose)
+
+        rospy.loginfo("Publishing initiating path")
+        self.path_publisher.publish(goal_path)
+
+        rospy.loginfo("Waiting {} before switch".format(self.timeout))
+        rospy.sleep(self.timeout)
+        return 'Completed'
+
+
+class MoveIntoContact(BaseStateRos):
+    """
+    Move the end effector into the wall commanding a desired interaction wrench
+    """
+    def __init__(self, ns):
+        BaseStateRos.__init__(self, outcomes=['Completed', 'Aborted'], ns=ns)
+
+    def execute(self, ud):
+        rospy.logwarn("The execution of the MoveIntoContact state needs to be implemented. Sleeping for 3.0 s")
         rospy.sleep(3.0)
         return 'Completed'
 
