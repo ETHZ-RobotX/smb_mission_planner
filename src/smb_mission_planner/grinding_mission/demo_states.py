@@ -244,3 +244,16 @@ class DoGrinding(BaseStateRos):
         rospy.loginfo("Path has len {}".format(len(path.poses)))
         rospy.sleep(3.0)
         return 'Completed'
+
+
+class AsBuiltSensing(BaseStateRos):
+    """
+    State description
+    """
+    def __init__(self, ns):
+        BaseStateRos.__init__(self, outcomes=['Completed', 'Aborted'], ns=ns)
+
+    def execute(self, ud):
+        rospy.logwarn("The execution of the AsBuiltSensing state needs to be implemented. Sleeping for 3.0 s")
+        rospy.sleep(3.0)
+        return 'Completed'

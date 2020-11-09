@@ -45,3 +45,6 @@ init_grinding:
 
 grinding:
   timeout: 10.0
+
+as_built_sensing:
+  key: value
