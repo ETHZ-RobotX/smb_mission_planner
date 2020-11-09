@@ -26,4 +26,6 @@
   <depend>controller_manager_msgs</depend>
   <depend>control_msgs</depend>
   <depend>cpt_pointlaser_msgs</depend>
+  <depend>mabi_speedy12_msgs</depend>
+
 </package>

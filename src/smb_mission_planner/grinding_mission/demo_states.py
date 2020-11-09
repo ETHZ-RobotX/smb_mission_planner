@@ -3,8 +3,12 @@ import copy
 from std_srvs.srv import Empty
 from nav_msgs.msg import Path
 from geometry_msgs.msg import PoseStamped
+import tf2_geometry_msgs
+import tf2_ros
+from geometry_msgs.msg import TransformStamped
 
 from cpt_pointlaser_msgs.srv import HighAccuracyLocalization, HighAccuracyLocalizationRequest
+from mabi_speedy12_msgs.srv import DesiredWrenchCurrentEEFrameReference, DesiredWrenchCurrentEEFrameReferenceRequest
 from smb_mission_planner.base_state_ros import BaseStateRos
 from smb_mission_planner.navigation_states import SingleNavGoalState
 from smb_mission_planner.manipulation_states import EndEffectorRocoControl
@@ -126,10 +130,9 @@ class ArmPosesVisitor(EndEffectorRocoControl):
         if not current_pose:
             return 'Aborted'
 
-        goal_pose = PoseStamped()
+        goal_pose = self.poses_ros[self.pose_idx]
         goal_pose.header.frame_id = self.reference_frame
         goal_pose.header.stamp = rospy.get_rostime()
-        goal_pose.pose = self.poses_ros[self.pose_idx]
 
         # same time, let mpc decide the timing
         current_pose.header.stamp = rospy.get_rostime()
@@ -138,7 +141,7 @@ class ArmPosesVisitor(EndEffectorRocoControl):
         goal_pose.header.stamp = rospy.get_rostime()
         goal_path.poses.append(goal_pose)
 
-        rospy.loginfo("Publishing pose {}".format(self.pose_idx))
+        rospy.loginfo("Publishing path with pose #{}".format(self.pose_idx))
         self.path_publisher.publish(goal_path)
 
         rospy.loginfo("Waiting {} before switch".format(self.timeout))
@@ -226,7 +229,11 @@ class InitialPositioning(EndEffectorRocoControl):
     """
     def __init__(self, ns):
         EndEffectorRocoControl.__init__(self, ns=ns)
-        self.offset = self.get_scoped_param("offset")
+        offset = self.get_scoped_param("offset")
+
+        # Transformation from the first pose in the grinding path and a initializing pose
+        # for the end effector
+        self.offset_pose = self.parse_pose(offset)
 
     def execute(self, ud):
         if not self.switch_controller():
@@ -242,14 +249,54 @@ class InitialPositioning(EndEffectorRocoControl):
         if not current_pose:
             return 'Aborted'
 
-        goal_pose = PoseStamped()
+        # the goal pose is expressed in the reference frame with an offset wrt the first pose
+        # in the grinding path
+
+        # extract tf if needed from grinding path frame to the reference frame
+        grinding_path = copy.deepcopy(self.get_context_data("grinding_path"))
+        if not grinding_path:
+            rospy.logerr("Failed to get grinding path from global context")
+            return 'Aborted'
+
+        tf_w_start = TransformStamped()
+        tf_ref_w = TransformStamped()
+        if grinding_path.header.frame_id is not self.reference_frame:
+            tf_buffer = tf2_ros.Buffer()
+            tf_listener = tf2_ros.TransformListener(tf_buffer)
+            try:
+                tf_ref_w = tf_buffer.lookup_transform(self.reference_frame,            # target frame
+                                                      grinding_path.header.frame_id,   # source frame
+                                                      rospy.Time(0),                   # tf at first available time
+                                                      rospy.Duration(3))               # wait for 3 seconds
+            except Exception as exc:
+                rospy.logerr(exc)
+                return 'Aborted'
+        else:
+            tf_ref_w.transform.translation.x = 0
+            tf_ref_w.transform.translation.y = 0
+            tf_ref_w.transform.translation.z = 0
+            tf_ref_w.transform.rotation.x = 0
+            tf_ref_w.transform.rotation.y = 0
+            tf_ref_w.transform.rotation.z = 0
+            tf_ref_w.transform.rotation.w = 1.0
+
+        tf_w_start.transform.translation.x = grinding_path.poses[0].pose.position.x
+        tf_w_start.transform.translation.y = grinding_path.poses[0].pose.position.y
+        tf_w_start.transform.translation.z = grinding_path.poses[0].pose.position.z
+        tf_w_start.transform.rotation.x = grinding_path.poses[0].pose.orientation.x
+        tf_w_start.transform.rotation.y = grinding_path.poses[0].pose.orientation.y
+        tf_w_start.transform.rotation.z = grinding_path.poses[0].pose.orientation.z
+        tf_w_start.transform.rotation.w = grinding_path.poses[0].pose.orientation.w
+
+        # First transform the offset expressed in the first pose frame in the reference frame of the first pose
+        # path message (here denoted w, this is the transform equal to the path message).
+        # Then convert the resulting pose in the reference frame of thee ee goal (here denoted ref)
+        tf_ref_ee = tf2_geometry_msgs.do_transform_pose(tf2_geometry_msgs.do_transform_pose(self.offset_pose,
+                                                                                            tf_w_start),
+                                                        tf_ref_w)
+        goal_pose = tf_ref_ee
         goal_pose.header.frame_id = self.reference_frame
         goal_pose.header.stamp = rospy.get_rostime()
-
-        # get the first pose in the task path.
-        goal_pose = copy.deepcopy(self.get_context_data("grinding_path"))
-        if not goal_pose:
-            rospy.logwarn("Could not get the first pose from the grinding path")
 
         # same time, let mpc decide the timing
         current_pose.header.stamp = rospy.get_rostime()
@@ -258,7 +305,7 @@ class InitialPositioning(EndEffectorRocoControl):
         goal_pose.header.stamp = rospy.get_rostime()
         goal_path.poses.append(goal_pose)
 
-        rospy.loginfo("Publishing initiating path")
+        rospy.loginfo("Publishing path for initial positioning.")
         self.path_publisher.publish(goal_path)
 
         rospy.loginfo("Waiting {} before switch".format(self.timeout))
@@ -272,37 +319,123 @@ class MoveIntoContact(BaseStateRos):
     """
     def __init__(self, ns):
         BaseStateRos.__init__(self, outcomes=['Completed', 'Aborted'], ns=ns)
+        self.set_wrench_service_name = self.get_scoped_param("wrench_service_name")
+        self.reset_reference = self.get_scoped_param("reset_reference")
+        self.fx = self.get_scoped_param("force/x")
+        self.fy = self.get_scoped_param("force/y")
+        self.fz = self.get_scoped_param("force/z")
+        self.set_wrench_service_client = rospy.ServiceProxy(self.set_wrench_service_name,
+                                                            DesiredWrenchCurrentEEFrameReference)
 
     def execute(self, ud):
-        rospy.logwarn("The execution of the MoveIntoContact state needs to be implemented. Sleeping for 3.0 s")
-        rospy.sleep(3.0)
-        return 'Completed'
+        try:
+            self.set_wrench_service_client.wait_for_service(3.0)
+        except rospy.ROSException as exc:
+            rospy.logerr("Failed to call set wrench service: {}".format(exc))
+            return 'Aborted'
+
+        req = DesiredWrenchCurrentEEFrameReferenceRequest()
+        req.wrench.force.x = self.fx
+        req.wrench.force.y = self.fy
+        req.wrench.force.z = self.fz
+        req.wrench.torque.x = 0.0
+        req.wrench.torque.y = 0.0
+        req.wrench.torque.z = 0.0
+        req.resetReference = self.reset_reference
+        res = self.set_wrench_service_client.call(req)
+        rospy.loginfo("{} responded with message: {}".format(self.set_wrench_service_name, res.message))
+        if res.success:
+            return 'Completed'
+        else:
+            return 'Aborted'
 
 
-class DoGrinding(BaseStateRos):
+class FollowGrindingPath(EndEffectorRocoControl):
     """
     Does the grinding
     """
     def __init__(self, ns):
-        BaseStateRos.__init__(self, outcomes=['Completed', 'Aborted'], ns=ns)
-        self.timeout = self.get_scoped_param("timeout")
+        EndEffectorRocoControl.__init__(self, ns=ns)
 
     def execute(self, ud):
-        rospy.logwarn("The execution of the DoGrinding state needs to be implemented. Sleeping for 3.0 s")
-        path = self.get_context_data("grinding_path")
-        rospy.loginfo("Path has len {}".format(len(path.poses)))
-        rospy.sleep(3.0)
+        grinding_path = self.get_context_data("grinding_path")
+        if not grinding_path:
+            rospy.logerr("Failed to retrieve grinding_path from global context")
+            return 'Aborted'
+
+        current_time = rospy.get_rostime()
+        grinding_path_transformed = copy.deepcopy(grinding_path)
+        grinding_path_transformed.header.frame_id = self.reference_frame
+
+        if grinding_path.header.frame_id is not self.reference_frame:
+            rospy.loginfo("grinding path is in {} frame. Converting it to {} reference frame".
+                          format(grinding_path.header.frame_id,
+                                 self.reference_frame))
+            tf_buffer = tf2_ros.Buffer()
+            tf_listener = tf2_ros.TransformListener(tf_buffer)
+            try:
+                transform = tf_buffer.lookup_transform(self.reference_frame,            # target frame
+                                                       grinding_path.header.frame_id,   # source frame
+                                                       rospy.Time(0),                   # tf at first available time
+                                                       rospy.Duration(3))               # wait for 3 seconds
+                for idx, pose in enumerate(grinding_path.poses):
+                    grinding_path_transformed.poses[idx] = tf2_geometry_msgs.do_transform_pose(pose, transform)
+                    grinding_path_transformed.poses[idx].header.stamp = current_time
+
+            except Exception as exc:
+                rospy.logerr("Failed lookup: {}".format(exc))
+                return 'Aborted'
+
+
+        grinding_path_transformed = Path()
+        grinding_path_transformed.poses.insert(0, self.get_end_effector_pose())
+        grinding_path_transformed.poses[0].header.stamp = current_time
+        self.path_publisher.publish(grinding_path_transformed)
+        rospy.loginfo("Waiting {} before switch".format(self.timeout))
+        rospy.sleep(self.timeout)
         return 'Completed'
 
 
-class AsBuiltSensing(BaseStateRos):
+class AsBuiltSensing(EndEffectorRocoControl):
     """
-    State description
+    Performs... TODO(hermann)
     """
     def __init__(self, ns):
-        BaseStateRos.__init__(self, outcomes=['Completed', 'Aborted'], ns=ns)
+        EndEffectorRocoControl.__init__(self, ns=ns)
+        self.scanning_pose = self.get_scoped_param("scanning_pose")
 
     def execute(self, ud):
-        rospy.logwarn("The execution of the AsBuiltSensing state needs to be implemented. Sleeping for 3.0 s")
-        rospy.sleep(3.0)
+        if not self.switch_controller():
+            rospy.logerr("AsBuiltSensing failed: failed to switch controller")
+            return 'Aborted'
+
+        goal_path = Path()
+        goal_path.header.stamp = rospy.get_rostime()
+        goal_path.header.frame_id = self.reference_frame
+
+        # get current end effector pose
+        current_pose = self.get_end_effector_pose()
+        if not current_pose:
+            return 'Aborted'
+
+        goal_pose = PoseStamped()
+        goal_pose.header.frame_id = self.reference_frame
+        goal_pose.header.stamp = rospy.get_rostime()
+        goal_pose.pose = self.parse_pose(self.scanning_pose)
+        if not goal_pose.pose:
+            rospy.logerr("Failed to parse the scanning pose")
+            return 'Aborted'
+
+        # same time, let mpc decide the timing
+        current_pose.header.stamp = rospy.get_rostime()
+        goal_path.poses.append(current_pose)
+
+        goal_pose.header.stamp = rospy.get_rostime()
+        goal_path.poses.append(goal_pose)
+
+        rospy.loginfo("Publishing path for as-built sensing.")
+        self.path_publisher.publish(goal_path)
+
+        rospy.loginfo("Waiting {} before switch".format(self.timeout))
+        rospy.sleep(self.timeout)
         return 'Completed'

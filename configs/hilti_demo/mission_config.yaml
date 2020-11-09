@@ -21,7 +21,7 @@ arm_recorded_motion:
   timeout: 10.0                                                   # max time before considering the pose reached
   roco_controller: MabiMobileCombinedController                   # desired roco controller
   controller_manager_namespace: /mabi_mobile_highlevel_controller
-  path_topic_name: mabi_mobile_highlevel_controller/MabiMobileCombinedController/external_path
+  path_topic_name: /mabi_mobile_highlevel_controller/MabiMobileCombinedController/external_path
 
   reference_frame_id: base
   end_effector_frame_id: end_effector
@@ -49,20 +49,42 @@ grinding_positioning:
   timeout: 10.0                                                   # max time before considering the pose reached
   roco_controller: MabiMobileCombinedController                   # desired roco controller
   controller_manager_namespace: /mabi_mobile_highlevel_controller
-  path_topic_name: mabi_mobile_highlevel_controller/MabiMobileCombinedController/external_path
+  path_topic_name: /mabi_mobile_highlevel_controller/MabiMobileCombinedController/external_path
 
   reference_frame_id: base
   end_effector_frame_id: end_effector
 
-  offset:
-    t: [0.0, 0.0, 0.0]
+  offset:                                 # this is the offset expressed in the grinding path frame : T_grind_ee
+    t: [-0.2, 0.0, 0.0]
     q: [0.0, 0.0, 0.0, 1.0]
 
 move_into_contact:
-  key: value
+  wrench_service_name: /setDesiredWrenchCurrentEEFrame
+  reset_reference: true
+  force:
+    x: 0.0
+    y: 0.0
+    z: -50.0
 
-grinding:
+
+follow_grinding_path:
   timeout: 10.0
+  roco_controller: MabiMobileCombinedController                   # desired roco controller
+  controller_manager_namespace: /mabi_mobile_highlevel_controller
+  path_topic_name: /mabi_mobile_highlevel_controller/MabiMobileCombinedController/external_path
+
+  reference_frame_id: base
+  end_effector_frame_id: end_effector
 
 as_built_sensing:
-  key: value
+  timeout: 10.0                                                   # max time before considering the pose reached
+  roco_controller: MabiMobileCombinedController                   # desired roco controller
+  controller_manager_namespace: /mabi_mobile_highlevel_controller
+  path_topic_name: /mabi_mobile_highlevel_controller/MabiMobileCombinedController/external_path
+
+  reference_frame_id: base
+  end_effector_frame_id: end_effector
+
+  scanning_pose:
+    t: [0.0, 0.0, 0.0]
+    q: [0.0, 0.0, 0.0, 1.0]

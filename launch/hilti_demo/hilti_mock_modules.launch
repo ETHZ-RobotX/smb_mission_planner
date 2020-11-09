@@ -14,6 +14,7 @@
       <param name="hal_data_collection_service_name"  value="/hal_take_measurement"/>
       <param name="hal_update_topic_name"             value="/building_task_manager/task_offset_target_pose"/>
       <param name="confusor_service_name"             value="/to_define"/>
+      <param name="wrench_service_name"               value="/setDesiredWrenchCurrentEEFrame"/>
     </node>
 
     <node pkg="smb_mission_planner" type="path_generator.py"  name="path_generator" output="screen">

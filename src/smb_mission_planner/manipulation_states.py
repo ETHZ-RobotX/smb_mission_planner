@@ -189,6 +189,9 @@ class GripperControl(BaseStateRos):
 
 class EndEffectorRocoControl(BaseStateRos):
     """
+    In this state the end effector pose is controlled by a roco controller.
+    This state provides utility methods to parse poses from the mission file and query
+    for the current end effector pose.
     """
     def __init__(self, ns, outcomes=['Completed', 'Aborted']):
         BaseStateRos.__init__(self, outcomes=outcomes, ns=ns)
@@ -198,8 +201,8 @@ class EndEffectorRocoControl(BaseStateRos):
         self.ee_frame = self.get_scoped_param("end_effector_frame_id")
         self.reference_frame = self.get_scoped_param("reference_frame_id")
 
-        pose_topic_name = self.get_scoped_param("path_topic_name")
-        self.path_publisher = rospy.Publisher(pose_topic_name, Path, queue_size=1)
+        path_topic_name = self.get_scoped_param("path_topic_name")
+        self.path_publisher = rospy.Publisher(path_topic_name, Path, queue_size=10)
         self.tf_buffer = tf2_ros.Buffer()
         self.tf_listener = tf2_ros.TransformListener(self.tf_buffer)
 

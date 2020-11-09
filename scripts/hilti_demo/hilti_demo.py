@@ -40,10 +40,10 @@ with state_machine:
                                             'Aborted': 'Failure'})
 
         smach.StateMachine.add('MOVE_INTO_CONTACT', MoveIntoContact(ns="move_into_contact"),
-                               transitions={'Completed': 'DO_GRINDING',
+                               transitions={'Completed': 'FOLLOW_GRINDING_PATH',
                                             'Aborted': 'Failure'})
 
-        smach.StateMachine.add('DO_GRINDING', DoGrinding(ns="grinding"),
+        smach.StateMachine.add('FOLLOW_GRINDING_PATH', FollowGrindingPath(ns="follow_grinding_path"),
                                transitions={'Completed': 'AS_BUILT_SENSING',
                                             'Aborted': 'Failure'})
 
