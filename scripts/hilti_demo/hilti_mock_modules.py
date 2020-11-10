@@ -50,12 +50,6 @@ def hal_optimization_callback(_):
     return hal_response
 
 
-def confusor_callback(_):
-    rospy.loginfo("Received a confusor update request. Sleeping 1.0 sec and returning")
-    rospy.sleep(1.0)
-    return EmptyResponse()
-
-
 def set_wrench_callback(req):
     rospy.loginfo("Requested to set new wrench: {}.\nSleeping for 1.0 sec and returning".format(req))
     rospy.sleep(1.0)
@@ -77,7 +71,6 @@ if __name__ == "__main__":
 
     hal_optimization_service_name = rospy.get_param("~hal_optimization_service_name")
     hal_data_collection_service_name = rospy.get_param("~hal_data_collection_service_name")
-    confusor_service_name = rospy.get_param("~confusor_service_name")
     wrench_service_name = rospy.get_param("~wrench_service_name")
 
     nav_goal_subscriber = rospy.Subscriber(nav_goal_topic, PoseStamped, planner_callback, queue_size=10)
@@ -91,7 +84,6 @@ if __name__ == "__main__":
 
     hal_data_service = rospy.Service(hal_data_collection_service_name, Empty, hal_data_callback)
     hal_optm_service = rospy.Service(hal_optimization_service_name, HighAccuracyLocalization, hal_optimization_callback)
-    confusor_service = rospy.Service(confusor_service_name, Empty, confusor_callback)
     wrench_service = rospy.Service(wrench_service_name, DesiredWrenchCurrentEEFrameReference, set_wrench_callback)
 
     # Spin
