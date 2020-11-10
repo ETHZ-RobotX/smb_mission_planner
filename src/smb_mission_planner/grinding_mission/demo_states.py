@@ -141,13 +141,12 @@ class ArmPosesVisitor(EndEffectorRocoControl):
 
         goal_pose = self.poses_ros[self.pose_idx]
         goal_pose.header.frame_id = self.reference_frame
-        goal_pose.header.stamp = rospy.get_rostime()
 
         # same time, let mpc decide the timing
         current_pose.header.stamp = rospy.get_rostime()
         goal_path.poses.append(current_pose)
 
-        goal_pose.header.stamp = rospy.get_rostime()
+        goal_pose.header.stamp = rospy.get_rostime() + rospy.Duration(self.timeout) - rospy.Duration(1.0)
         goal_path.poses.append(goal_pose)
 
         rospy.loginfo("Publishing path with pose #{}".format(self.pose_idx))

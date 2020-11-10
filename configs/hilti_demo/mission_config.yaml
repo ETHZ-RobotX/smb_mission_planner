@@ -24,10 +24,12 @@ arm_recorded_motion:
   timeout: 10.0                                                   # max time before considering the pose reached
   roco_controller: MabiMobileCombinedController                   # desired roco controller
   controller_manager_namespace: /mabi_mobile_highlevel_controller
+  sub_roco_controller: MabiExternalPathAdmittanceEndeffectorTrackingController  # desired roco controller
+  sub_controller_manager_namespace: /mabi_mobile_highlevel_controller/MabiMobileCombinedController/
   path_topic_name: /mabi_mobile_highlevel_controller/MabiMobileCombinedController/external_path
 
   reference_frame_id: base
-  end_effector_frame_id: end_effector
+  end_effector_frame_id: ENDEFFECTOR
   poses:                                                          # list of target poses in format t: [x, y, z], q: [qx, qy, qz, qw]
     - t: [0.0, 0.0, 0.0]
       q: [0.0, 0.0, 0.0, 1.0]

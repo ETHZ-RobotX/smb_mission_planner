@@ -200,6 +200,8 @@ class EndEffectorRocoControl(BaseStateRos):
         self.controller_manager_namespace = self.get_scoped_param("controller_manager_namespace")
         self.ee_frame = self.get_scoped_param("end_effector_frame_id")
         self.reference_frame = self.get_scoped_param("reference_frame_id")
+        self.sub_controller = self.get_scoped_param("sub_roco_controller", safe=False)
+        self.sub_controller_manager_namespace = self.get_scoped_param("sub_controller_manager_namespace", safe=False)
 
         path_topic_name = self.get_scoped_param("path_topic_name")
         self.path_publisher = rospy.Publisher(path_topic_name, Path, queue_size=10)
@@ -209,6 +211,11 @@ class EndEffectorRocoControl(BaseStateRos):
     def switch_controller(self):
         success = rocoma_utils.switch_roco_controller(self.controller,
                                                       ns=self.controller_manager_namespace)
+        if success is False:
+            return success
+        if self.sub_controller is not None and self.sub_controller_manager_namespace is not None:
+            success = rocoma_utils.switch_roco_controller(self.sub_controller,
+                                                          ns=self.sub_controller_manager_namespace)
         return success
 
     def get_end_effector_pose(self):
