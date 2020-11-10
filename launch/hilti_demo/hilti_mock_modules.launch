@@ -13,7 +13,6 @@
       <param name="hal_optimization_service_name"     value="/high_accuracy_localize"/>
       <param name="hal_data_collection_service_name"  value="/hal_take_measurement"/>
       <param name="hal_update_topic_name"             value="/building_task_manager/task_offset_target_pose"/>
-      <param name="confusor_service_name"             value="/to_define"/>
       <param name="wrench_service_name"               value="/setDesiredWrenchCurrentEEFrame"/>
     </node>
 

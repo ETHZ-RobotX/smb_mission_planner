@@ -42,10 +42,7 @@ hal_data_collection:
 hal_optimization:
   #default_outcome: Completed, Aborted
   hal_optimization_service_name: /high_accuracy_localize
-  confusor_update_service_name: /to_define
   hal_timeout: 10.0                                               # max time to wait for the service to be advertised
-  confusor_timeout: 10.0                                          # max time to wait for the service to be advertised
-  hal_update_timeout: 10.0                                        # max time to wait for the hal update message (sent then to confusor)
 
 init_grinding:
   default_outcome: Completed

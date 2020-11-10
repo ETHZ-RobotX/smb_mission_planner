@@ -191,14 +191,8 @@ class HALOptimization(BaseStateRos):
     def __init__(self, ns):
         BaseStateRos.__init__(self, outcomes=['Completed', 'Aborted'], ns=ns)
         hal_optimization_service_name = self.get_scoped_param("hal_optimization_service_name")
-        confusor_service_name = self.get_scoped_param("confusor_update_service_name")
-
         self.hal_timeout = self.get_scoped_param("hal_timeout")
-        self.hal_update_timeout = self.get_scoped_param("hal_update_timeout")
-        self.confusor_timeout = self.get_scoped_param("confusor_timeout")
-
         self.hal_service_client = rospy.ServiceProxy(hal_optimization_service_name, HighAccuracyLocalization)
-        self.confusor_service_client = rospy.ServiceProxy(confusor_service_name, Empty)
 
     def execute(self, ud):
         if self.default_outcome:
@@ -210,24 +204,16 @@ class HALOptimization(BaseStateRos):
             rospy.logerr(exc)
             return 'Aborted'
 
-        try:
-            self.confusor_service_client.wait_for_service(self.confusor_timeout)
-        except rospy.ROSException as exc:
-            rospy.logerr(exc)
-            return 'Aborted'
-
         hal_req = HighAccuracyLocalizationRequest()
         hal_res = self.hal_service_client.call(hal_req)
         rospy.loginfo("Update base pose in world frame is: {}".format(hal_res.corrected_base_pose_in_world))
 
-        # TODO(giuseppe) use the correct confusor service class and pass the hal response to it
-        self.confusor_service_client.call()
         return 'Completed'
 
 
 class InitializeGrinding(BaseStateRos):
     """
-    Start the grinder
+    Starts the grinder
     """
     def __init__(self, ns):
         BaseStateRos.__init__(self, outcomes=['Completed', 'Aborted'], ns=ns)
@@ -244,6 +230,8 @@ class InitializeGrinding(BaseStateRos):
 
 class InitialPositioning(EndEffectorRocoControl):
     """
+    Parse an offset from param server and uses this and the first pose in the path to
+    define the target pose for the end effector
     """
     def __init__(self, ns):
         EndEffectorRocoControl.__init__(self, ns=ns)
@@ -279,16 +267,23 @@ class InitialPositioning(EndEffectorRocoControl):
             rospy.logerr("Failed to get grinding path from global context")
             return 'Aborted'
 
+        # naming conventions:
+        # w : the reference frame for the stored grinding path
+        # ref : the reference frame for the controller path (from param file)
+        # start : the first pose in the grinding path
+        # ee : the reference frame
+        # T_start_ee : the offset of the ee in the path frame
+
+        # The goal is T_ref_ee = T_ref_w * T_w_start * T_start_ee
+
         tf_w_start = TransformStamped()
         tf_ref_w = TransformStamped()
         if grinding_path.header.frame_id is not self.reference_frame:
-            tf_buffer = tf2_ros.Buffer()
-            tf_listener = tf2_ros.TransformListener(tf_buffer)
             try:
-                tf_ref_w = tf_buffer.lookup_transform(self.reference_frame,            # target frame
-                                                      grinding_path.header.frame_id,   # source frame
-                                                      rospy.Time(0),                   # tf at first available time
-                                                      rospy.Duration(3))               # wait for 3 seconds
+                tf_ref_w = self.tf_buffer.lookup_transform(self.reference_frame,            # target frame
+                                                           grinding_path.header.frame_id,   # source frame
+                                                           rospy.Time(0),                   # tf at first available time
+                                                           rospy.Duration(3))               # wait for 3 seconds
             except Exception as exc:
                 rospy.logerr(exc)
                 return 'Aborted'
@@ -311,7 +306,7 @@ class InitialPositioning(EndEffectorRocoControl):
 
         # First transform the offset expressed in the first pose frame in the reference frame of the first pose
         # path message (here denoted w, this is the transform equal to the path message).
-        # Then convert the resulting pose in the reference frame of thee ee goal (here denoted ref)
+        # Then convert the resulting pose in the reference frame of the ee goal (here denoted ref)
         tf_ref_ee = tf2_geometry_msgs.do_transform_pose(tf2_geometry_msgs.do_transform_pose(self.offset_pose,
                                                                                             tf_w_start),
                                                         tf_ref_w)
@@ -398,13 +393,11 @@ class FollowGrindingPath(EndEffectorRocoControl):
             rospy.loginfo("grinding path is in {} frame. Converting it to {} reference frame".
                           format(grinding_path.header.frame_id,
                                  self.reference_frame))
-            tf_buffer = tf2_ros.Buffer()
-            tf_listener = tf2_ros.TransformListener(tf_buffer)
             try:
-                transform = tf_buffer.lookup_transform(self.reference_frame,            # target frame
-                                                       grinding_path.header.frame_id,   # source frame
-                                                       rospy.Time(0),                   # tf at first available time
-                                                       rospy.Duration(3))               # wait for 3 seconds
+                transform = self.tf_buffer.lookup_transform(self.reference_frame,            # target frame
+                                                            grinding_path.header.frame_id,   # source frame
+                                                            rospy.Time(0),                   # tf at first available time
+                                                            rospy.Duration(3))               # wait for 3 seconds
                 for idx, pose in enumerate(grinding_path.poses):
                     grinding_path_transformed.poses[idx] = tf2_geometry_msgs.do_transform_pose(pose, transform)
                     grinding_path_transformed.poses[idx].header.stamp = current_time
@@ -413,8 +406,6 @@ class FollowGrindingPath(EndEffectorRocoControl):
                 rospy.logerr("Failed lookup: {}".format(exc))
                 return 'Aborted'
 
-
-        grinding_path_transformed = Path()
         grinding_path_transformed.poses.insert(0, self.get_end_effector_pose())
         grinding_path_transformed.poses[0].header.stamp = current_time
         self.path_publisher.publish(grinding_path_transformed)
