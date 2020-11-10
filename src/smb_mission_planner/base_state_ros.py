@@ -30,7 +30,12 @@ class BaseStateRos(smach.State):
         global global_context
         self.global_context = global_context
 
-    def get_scoped_param(self, param_name):
+        # parse optional default outcome
+        self.default_outcome = self.get_scoped_param("default_outcome", safe=False)
+        if self.default_outcome and self.default_outcome not in self.get_registered_outcomes():
+            raise NameError("{} is not in default outcomes".format(self.default_outcome))  # prevent accidental typos
+
+    def get_scoped_param(self, param_name, safe=True):
         """
         Get the absolute path relative to the state namespace of the path relative to the
         state and ros namespace
@@ -41,7 +46,14 @@ class BaseStateRos(smach.State):
             named_param = join(self.namespace, param_name)
         else:
             named_param = join(rospy.get_namespace(), self.namespace, param_name)
-        return ros_utils.get_param_safe(named_param)
+
+        if safe:
+            return ros_utils.get_param_safe(named_param)
+        else:
+            if rospy.has_param(named_param):
+                return rospy.get_param(named_param)
+            else:
+                return None
 
     def execute(self, ud):
         raise NotImplementedError("execute() needs to be implemented by the derived class")

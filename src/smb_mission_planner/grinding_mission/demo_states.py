@@ -36,6 +36,9 @@ class MissionStarter(BaseStateRos):
             self.callback_active = False
 
     def execute(self, ud):
+        if self.default_outcome:
+            return self.default_outcome
+
         self.callback_active = True
         elapsed = 0.0
         while not rospy.is_shutdown() and elapsed < self.timeout:
@@ -62,6 +65,9 @@ class NavigateToWall(SingleNavGoalState):
         self.normal_direction = self.get_scoped_param("normal_direction")
 
     def execute(self, userdata):
+        if self.default_outcome:
+            return self.default_outcome
+
         path = self.get_context_data("grinding_path")
         nav_goal = nav_goal_from_path(path,
                                       distance_from_wall=self.distance_from_wall,
@@ -107,6 +113,9 @@ class ArmPosesVisitor(EndEffectorRocoControl):
         return True
 
     def execute(self, ud):
+        if self.default_outcome:
+            return self.default_outcome
+
         if not self.check_poses():
             rospy.logerr("The poses list is ill-formed, aborting...")
             return 'Aborted'
@@ -161,6 +170,9 @@ class HALDataCollection(BaseStateRos):
         self.data_collection_service_client = rospy.ServiceProxy(service_name, Empty)
 
     def execute(self, ud):
+        if self.default_outcome:
+            return self.default_outcome
+
         try:
             self.data_collection_service_client.wait_for_service(self.timeout)
         except rospy.ROSException as exc:
@@ -189,6 +201,9 @@ class HALOptimization(BaseStateRos):
         self.confusor_service_client = rospy.ServiceProxy(confusor_service_name, Empty)
 
     def execute(self, ud):
+        if self.default_outcome:
+            return self.default_outcome
+
         try:
             self.hal_service_client.wait_for_service(self.hal_timeout)
         except rospy.ROSException as exc:
@@ -219,6 +234,9 @@ class InitializeGrinding(BaseStateRos):
         self.timeout = self.get_scoped_param("timeout")
 
     def execute(self, ud):
+        if self.default_outcome:
+            return self.default_outcome
+
         rospy.logwarn("The execution of the InitializeGrinding state needs to be implemented. Sleeping for 3.0 s")
         rospy.sleep(3.0)
         return 'Completed'
@@ -236,6 +254,9 @@ class InitialPositioning(EndEffectorRocoControl):
         self.offset_pose = self.parse_pose(offset)
 
     def execute(self, ud):
+        if self.default_outcome:
+            return self.default_outcome
+
         if not self.switch_controller():
             rospy.logerr("InitialPositioning failed: failed to switch controller")
             return 'Aborted'
@@ -328,6 +349,9 @@ class MoveIntoContact(BaseStateRos):
                                                             DesiredWrenchCurrentEEFrameReference)
 
     def execute(self, ud):
+        if self.default_outcome:
+            return self.default_outcome
+
         try:
             self.set_wrench_service_client.wait_for_service(3.0)
         except rospy.ROSException as exc:
@@ -358,6 +382,9 @@ class FollowGrindingPath(EndEffectorRocoControl):
         EndEffectorRocoControl.__init__(self, ns=ns)
 
     def execute(self, ud):
+        if self.default_outcome:
+            return self.default_outcome
+
         grinding_path = self.get_context_data("grinding_path")
         if not grinding_path:
             rospy.logerr("Failed to retrieve grinding_path from global context")
@@ -405,6 +432,9 @@ class AsBuiltSensing(EndEffectorRocoControl):
         self.scanning_pose = self.get_scoped_param("scanning_pose")
 
     def execute(self, ud):
+        if self.default_outcome:
+            return self.default_outcome
+
         if not self.switch_controller():
             rospy.logerr("AsBuiltSensing failed: failed to switch controller")
             return 'Aborted'

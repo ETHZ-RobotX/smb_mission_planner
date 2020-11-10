@@ -3,10 +3,12 @@
 # !!! Modify with care !!!
 
 mission_start:
+  default_outcome: Completed
   path_topic_name: /mabi_highlevel_controller/path_direct
   timeout: 10.0
 
 nav_to_wall:
+  default_outcome: Completed
   distance_from_wall: 3.0
   normal_direction: -1                        # can be either 1 or -1
   goal_pose_topic: /move_base_simple/goal
@@ -18,6 +20,7 @@ nav_to_wall:
   tolerance_deg: 10                           # position accuracy (degrees)
 
 arm_recorded_motion:
+  #default_outcome: PoseReached, NoMorePoses, Aborted
   timeout: 10.0                                                   # max time before considering the pose reached
   roco_controller: MabiMobileCombinedController                   # desired roco controller
   controller_manager_namespace: /mabi_mobile_highlevel_controller
@@ -32,10 +35,12 @@ arm_recorded_motion:
       q: [0.0, 0.0, 0.707, 0.707]
 
 hal_data_collection:
+  #default_outcome: Completed, Aborted
   service_name: /hal_take_measurement
   timeout: 10.0
 
 hal_optimization:
+  #default_outcome: Completed, Aborted
   hal_optimization_service_name: /high_accuracy_localize
   confusor_update_service_name: /to_define
   hal_timeout: 10.0                           # max time to wait for the service to be advertised
@@ -43,9 +48,11 @@ hal_optimization:
   hal_update_timeout: 10.0                    # max time to wait for the hal update message (sent then to confusor)
 
 init_grinding:
+  default_outcome: Completed
   timeout: 10.0
 
 grinding_positioning:
+  default_outcome: Completed
   timeout: 10.0                                                   # max time before considering the pose reached
   roco_controller: MabiMobileCombinedController                   # desired roco controller
   controller_manager_namespace: /mabi_mobile_highlevel_controller
@@ -59,6 +66,7 @@ grinding_positioning:
     q: [0.0, 0.0, 0.0, 1.0]
 
 move_into_contact:
+  default_outcome: Completed
   wrench_service_name: /setDesiredWrenchCurrentEEFrame
   reset_reference: true
   force:
@@ -68,6 +76,7 @@ move_into_contact:
 
 
 follow_grinding_path:
+  default_outcome: Completed
   timeout: 10.0
   roco_controller: MabiMobileCombinedController                   # desired roco controller
   controller_manager_namespace: /mabi_mobile_highlevel_controller
@@ -77,6 +86,7 @@ follow_grinding_path:
   end_effector_frame_id: end_effector
 
 as_built_sensing:
+  default_outcome: Completed
   timeout: 10.0                                                   # max time before considering the pose reached
   roco_controller: MabiMobileCombinedController                   # desired roco controller
   controller_manager_namespace: /mabi_mobile_highlevel_controller
