@@ -96,7 +96,7 @@ class HALInitialArmPositioning(EndEffectorRocoControl):
     def __init__(self, ns):
         EndEffectorRocoControl.__init__(self, ns=ns)
         self.target_offset = self.parse_pose(self.get_scoped_param("target_offset"))
-        
+
     def execute(self, ud):
         if not self.target_offset:
             rospy.logerr("Failed to parse the target end-effector pose for initial positioning in HAL routine")
@@ -119,17 +119,7 @@ class HALInitialArmPositioning(EndEffectorRocoControl):
         if not current_pose:
             return 'Aborted'
 
-        # Transform the target pose from the marker frame to the reference frame.
-        tf_ref_marker = TransformStamped()
-        try:
-            tf_ref_marker = self.tf_buffer.lookup_transform(self.reference_frame,  # target frame
-                                                            "marker",              # source frame
-                                                            rospy.Time(0),         # tf at first available time
-                                                            rospy.Duration(3))     # wait for 3 seconds
-        except Exception as exc:
-            rospy.logerr(exc)
-            return 'Aborted'
-        goal_pose = tf2_geometry_msgs.do_transform_pose(self.target_offset, tf_ref_marker)
+        goal_pose = self.target_offset
         goal_pose.header.frame_id = self.reference_frame
 
         # same time, let mpc decide the timing
@@ -206,7 +196,7 @@ class ArmPosesVisitor(EndEffectorRocoControl):
 
         # Transform the relative pose read from the config file to a pose in the reference frame.
         goal_frame = frame_from_pose(current_pose) * frame_from_pose(self.poses_ros[self.pose_idx])
-        
+
         goal_pose = PoseStamped()
         goal_pose.header.frame_id = self.reference_frame
         goal_pose = pose_from_frame_and_header(goal_frame, goal_pose.header)
