@@ -94,14 +94,14 @@ class HALInitialArmPositioning(EndEffectorRocoControl):
     read from the parameter server and is expressed in the marker frame.
     """
     def __init__(self, ns):
-        HALInitialArmPositioning.__init__(self, ns=ns)
+        EndEffectorRocoControl.__init__(self, ns=ns)
         self.target_offset = self.parse_pose(self.get_scoped_param("target_offset"))
-
+        
+    def execute(self, ud):
         if not self.target_offset:
             rospy.logerr("Failed to parse the target end-effector pose for initial positioning in HAL routine")
             return 'Aborted'
 
-    def execute(self, ud):
         if self.default_outcome:
             return self.default_outcome
 
