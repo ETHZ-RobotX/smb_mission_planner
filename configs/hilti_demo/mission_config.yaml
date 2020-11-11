@@ -35,7 +35,7 @@ hal_positioning:
   end_effector_frame_id: ENDEFFECTOR
 
 arm_recorded_motion:
-  #default_outcome: NoMorePoses
+  default_outcome: NoMorePoses
   timeout: 10.0                                                   # max time before considering the pose reached
   roco_controller: MabiMobileCombinedController                   # desired roco controller
   controller_manager_namespace: /mabi_mobile_highlevel_controller
@@ -82,7 +82,7 @@ grinding_positioning:
     q: [0.0, 0.0, 0.0, 1.0]
 
 move_into_contact:
-  default_outcome: Completed
+  #default_outcome: Completed
   timeout: 30.0                                                   # max time before considering the pose reached
   wrench_service_name: /setDesiredWrenchCurrentEEFrame
   reset_reference: true
@@ -105,7 +105,7 @@ move_into_contact:
 
 
 follow_grinding_path:
-  # default_outcome: Completed
+  default_outcome: Completed
   timeout: 10.0
   roco_controller: MabiMobileCombinedController                   # desired roco controller
   controller_manager_namespace: /mabi_mobile_highlevel_controller
@@ -115,6 +115,9 @@ follow_grinding_path:
 
   reference_frame_id: world
   end_effector_frame_id: ENDEFFECTOR
+
+  wrench_service_name: /setDesiredWrenchCurrentEEFrame
+  reset_reference: true
 
   wall_penetration: 0.02
 

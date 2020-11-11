@@ -482,12 +482,12 @@ class MoveIntoContact(EndEffectorRocoControl):
         req.wrench.torque.y = 0.0
         req.wrench.torque.z = 0.0
         req.resetReference = self.reset_reference
-        # res = self.set_wrench_service_client.call(req)
-        # rospy.loginfo("{} responded with message: {}".format(self.set_wrench_service_name, res.message))
-        # if res.success:
-        #     pass
-        # else:
-        #     return 'Aborted'
+        res = self.set_wrench_service_client.call(req)
+        rospy.loginfo("{} responded with message: {}".format(self.set_wrench_service_name, res.message))
+        if res.success:
+            pass
+        else:
+            return 'Aborted'
 
 
         goal_path = Path()
@@ -552,6 +552,14 @@ class FollowGrindingPath(EndEffectorRocoControl):
     def __init__(self, ns):
         EndEffectorRocoControl.__init__(self, ns=ns)
 
+        self.set_wrench_service_name = self.get_scoped_param("wrench_service_name")
+        self.reset_reference = self.get_scoped_param("reset_reference")
+        self.fx = 0
+        self.fy = 0
+        self.fz = 0
+        self.set_wrench_service_client = rospy.ServiceProxy(self.set_wrench_service_name,
+                                                            DesiredWrenchCurrentEEFrameReference)
+
         self.wall_penetration = self.get_scoped_param("wall_penetration")
 
     def execute(self, ud):
@@ -579,7 +587,34 @@ class FollowGrindingPath(EndEffectorRocoControl):
         self.path_publisher.publish(path_to_follow)
         rospy.loginfo("Waiting 1 sec before switch")
         rospy.sleep(1)
-        rospy.sleep(100)
+        rospy.loginfo("Waiting {}  sec before switch".format(path_to_follow.poses[-1].header.stamp.toSec()))
+        rospy.sleep(path_to_follow.poses[-1].header.stamp.toSec())
+
+
+        rospy.loginfo("Trying to set desired force to 0")
+
+        try:
+            self.set_wrench_service_client.wait_for_service(3.0)
+        except rospy.ROSException as exc:
+            rospy.logerr("Failed to call set wrench service: {}".format(exc))
+            return 'Aborted'
+
+        req = DesiredWrenchCurrentEEFrameReferenceRequest()
+        req.wrench.force.x = self.fx
+        req.wrench.force.y = self.fy
+        req.wrench.force.z = self.fz
+        req.wrench.torque.x = 0.0
+        req.wrench.torque.y = 0.0
+        req.wrench.torque.z = 0.0
+        req.resetReference = self.reset_reference
+        res = self.set_wrench_service_client.call(req)
+        rospy.loginfo("{} responded with message: {}".format(self.set_wrench_service_name, res.message))
+        if res.success:
+            pass
+        else:
+            return 'Aborted'
+
+
         return 'Completed'
 
 
