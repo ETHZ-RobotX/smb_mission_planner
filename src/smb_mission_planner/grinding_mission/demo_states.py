@@ -97,7 +97,49 @@ class HALInitialArmPositioning(EndEffectorRocoControl):
             return 'Aborted'
 
     def execute(self, ud):
-        raise NotImplementedError("The state HALInitialArmPositioning was not implemented yet.")
+        if self.default_outcome:
+            return self.default_outcome
+
+        if not self.switch_controller():
+            rospy.logerr(
+                "InitialPositioning failed: failed to switch controller")
+            return 'Aborted'
+
+        goal_path = Path()
+        goal_path.header.stamp = rospy.get_rostime()
+        goal_path.header.frame_id = self.reference_frame
+
+        # Get current end effector pose.
+        current_pose = self.get_end_effector_pose()
+        if not current_pose:
+            return 'Aborted'
+
+        # Transform the target pose from the marker frame to the reference frame.
+        tf_ref_marker = TransformStamped()
+        try:
+            tf_ref_marker = self.tf_buffer.lookup_transform(self.reference_frame,  # target frame
+                                                            "marker",              # source frame
+                                                            rospy.Time(0),         # tf at first available time
+                                                            rospy.Duration(3))     # wait for 3 seconds
+        except Exception as exc:
+            rospy.logerr(exc)
+            return 'Aborted'
+        goal_pose = tf2_geometry_msgs.do_transform_pose(self.target_offset, tf_ref_marker)
+        goal_pose.header.frame_id = self.reference_frame
+
+        # same time, let mpc decide the timing
+        current_pose.header.stamp = rospy.get_rostime()
+        goal_path.poses.append(current_pose)
+
+        goal_pose.header.stamp = rospy.get_rostime() + rospy.Duration(self.timeout) - rospy.Duration(1.0)
+        goal_path.poses.append(goal_pose)
+
+        rospy.loginfo("Publishing path for initial positioning of the end-effector for the HAL routine.")
+        self.path_publisher.publish(goal_path)
+
+        rospy.loginfo("Waiting {} before switch".format(self.timeout))
+        rospy.sleep(self.timeout)
+        return 'Completed'
 
 
 class ArmPosesVisitor(EndEffectorRocoControl):
