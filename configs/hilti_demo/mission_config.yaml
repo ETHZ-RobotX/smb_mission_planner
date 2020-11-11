@@ -45,12 +45,12 @@ arm_recorded_motion:
   reference_frame_id: base
   end_effector_frame_id: ENDEFFECTOR
   poses:                                                          # list of target poses in format t: [x, y, z], q: [qx, qy, qz, qw]. Note: these poses are relative to the previous pose of the end effector.
-    - t: [0.0, 0.1, 0.0]
-      q: [0.0, 0.0, 0.707, 0.707]
-    - t: [0.0, 0.1, 0.0]
-      q: [0.0, 0.0, 0.0, 1.0]
-    - t: [0.0, 0.1, 0.0]
-      q: [0.0, 0.0, 0.0, 1.0]
+    - t: [0.0, 0.0, 0.0]
+      q: [ 0.0434534, 0.0870728, 0.0038017, 0.9952465 ]
+    - t: [0.0, 0.0, 0.0]
+      q: [ 0.0434534, 0.0870728, 0.0038017, 0.9952465 ]
+    - t: [0.0, 0.0, 0.0]
+      q: [ 0.0429567, -0.1734829, -0.0075744, 0.9838704 ]
 
 hal_data_collection:
   default_outcome: Completed
