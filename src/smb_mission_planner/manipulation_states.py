@@ -33,8 +33,9 @@ class RosControlPoseReaching(BaseStateRos):
 
     def do_switch(self):
         return switch_ros_controller(controller_name=self.controller_name,
-                                     manager_namespace=self.manager_namespace,
-                                     whitelist=self.whitelist)
+                                              manager_namespace=self.manager_namespace,
+                                              whitelist=self.whitelist)
+
 
     def execute(self, ud):
         rospy.logwarn("This method needs to be implemented yet. Use 'do_switch' to switch to the desired controller.")

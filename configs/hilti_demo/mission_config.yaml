@@ -3,7 +3,7 @@
 # !!! Modify with care !!!
 
 mission_start:
-  default_outcome: Completed
+  # default_outcome: Completed
   path_topic_name: /mabi_highlevel_controller/path_direct
   timeout: 10.0
 
@@ -25,7 +25,7 @@ hal_positioning:
     q: [0.0, 0.0, 0.0, 1.0]
 
 arm_recorded_motion:
-  #default_outcome: PoseReached, NoMorePoses, Aborted
+  default_outcome: NoMorePoses
   timeout: 10.0                                                   # max time before considering the pose reached
   roco_controller: MabiMobileCombinedController                   # desired roco controller
   controller_manager_namespace: /mabi_mobile_highlevel_controller
@@ -42,12 +42,12 @@ arm_recorded_motion:
       q: [0.0, 0.0, 0.707, 0.707]
 
 hal_data_collection:
-  #default_outcome: Completed, Aborted
+  default_outcome: Completed
   service_name: /hal_take_measurement
   timeout: 10.0
 
 hal_optimization:
-  #default_outcome: Completed, Aborted
+  default_outcome: Completed
   hal_optimization_service_name: /high_accuracy_localize
   hal_timeout: 10.0                                               # max time to wait for the service to be advertised
 
@@ -71,23 +71,40 @@ grinding_positioning:
 
 move_into_contact:
   default_outcome: Completed
+  timeout: 30.0                                                   # max time before considering the pose reached
   wrench_service_name: /setDesiredWrenchCurrentEEFrame
   reset_reference: true
   force:
     x: 0.0
     y: 0.0
     z: -50.0
+  ft_imu_sensor_topic: "/gravity_compensated_wrench"
+  travel:                                                         # this is the travel for making contact in the end effector frame
+    t: [0.0, 0.0, 0.2]
+    q: [0.0, 0.0, 0.0, 1.0]
+  roco_controller: MabiMobileCombinedController                   # desired roco controller
+  controller_manager_namespace: /mabi_mobile_highlevel_controller
+  sub_roco_controller: MabiExternalPathAdmittanceEndeffectorTrackingController  # desired roco controller
+  sub_controller_manager_namespace: /mabi_mobile_highlevel_controller/MabiMobileCombinedController/
+  path_topic_name: /mabi_mobile_highlevel_controller/MabiMobileCombinedController/external_path
+  reference_frame_id: ENDEFFECTOR
+  end_effector_frame_id: ENDEFFECTOR
+
 
 
 follow_grinding_path:
-  default_outcome: Completed
+  # default_outcome: Completed
   timeout: 10.0
-  roco_controller: MabiMobileCombinedController                     # desired roco controller
+  roco_controller: MabiMobileCombinedController                   # desired roco controller
   controller_manager_namespace: /mabi_mobile_highlevel_controller
+  sub_roco_controller: MabiExternalPathEndeffectorTrackingController #MabiExternalPathAdmittanceEndeffectorTrackingController  # desired roco controller
+  sub_controller_manager_namespace: /mabi_mobile_highlevel_controller/MabiMobileCombinedController/
   path_topic_name: /mabi_mobile_highlevel_controller/MabiMobileCombinedController/external_path
 
-  reference_frame_id: base
-  end_effector_frame_id: end_effector
+  reference_frame_id: world
+  end_effector_frame_id: ENDEFFECTOR
+
+  wall_penetration: 0.02
 
 as_built_sensing:
   default_outcome: Completed
