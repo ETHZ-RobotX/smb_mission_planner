@@ -76,7 +76,7 @@ if __name__ == "__main__":
 
     ee_goal_topic = rospy.get_param("~ee_goal_topic")
     controller_manager_ns = rospy.get_param("~controller_manager_namespace", "/smb_highlevel_controller")
-    sub_controller_manager_ns = rospy.get_param("~controller_manager_namespace", "/smb_highlevel_controller")
+    sub_controller_manager_ns = rospy.get_param("~sub_controller_manager_namespace", "/smb_highlevel_controller")
 
     hal_optimization_service_name = rospy.get_param("~hal_optimization_service_name")
     hal_data_collection_service_name = rospy.get_param("~hal_data_collection_service_name")

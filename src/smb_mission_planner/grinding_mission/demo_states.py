@@ -206,8 +206,10 @@ class ArmPosesVisitor(EndEffectorRocoControl):
 
         # Transform the relative pose read from the config file to a pose in the reference frame.
         goal_frame = frame_from_pose(current_pose) * frame_from_pose(self.poses_ros[self.pose_idx])
-        goal_pose = pose_from_frame_and_header(goal_frame, self.reference_frame)
+        
+        goal_pose = PoseStamped()
         goal_pose.header.frame_id = self.reference_frame
+        goal_pose = pose_from_frame_and_header(goal_frame, goal_pose.header)
 
         # same time, let mpc decide the timing
         current_pose.header.stamp = rospy.get_rostime()
