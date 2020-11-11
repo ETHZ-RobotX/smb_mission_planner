@@ -561,11 +561,12 @@ class FollowGrindingPath(EndEffectorRocoControl):
                                                             DesiredWrenchCurrentEEFrameReference)
 
         self.wall_penetration = self.get_scoped_param("wall_penetration")
+        rospy.sleep(0.5)
 
     def execute(self, ud):
         if self.default_outcome:
             return self.default_outcome
-
+        
         if not self.switch_controller():
             rospy.logerr("InitialPositioning failed: failed to switch controller")
             return 'Aborted'
@@ -587,8 +588,8 @@ class FollowGrindingPath(EndEffectorRocoControl):
         self.path_publisher.publish(path_to_follow)
         rospy.loginfo("Waiting 1 sec before switch")
         rospy.sleep(1)
-        rospy.loginfo("Waiting {}  sec before switch".format(path_to_follow.poses[-1].header.stamp.toSec()))
-        rospy.sleep(path_to_follow.poses[-1].header.stamp.toSec())
+#        rospy.loginfo("Waiting {}  sec before switch".format(path_to_follow.poses[-1].header.stamp.toSec()))
+        rospy.sleep(path_to_follow.poses[-1].header.stamp.to_sec())
 
 
         rospy.loginfo("Trying to set desired force to 0")

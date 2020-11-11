@@ -82,8 +82,8 @@ grinding_positioning:
     q: [0.0, 0.0, 0.0, 1.0]
 
 move_into_contact:
-  #default_outcome: Completed
-  timeout: 30.0                                                   # max time before considering the pose reached
+  default_outcome: Completed
+  timeout: 20.0                                                   # max time before considering the pose reached
   wrench_service_name: /setDesiredWrenchCurrentEEFrame
   reset_reference: true
   force:
@@ -105,11 +105,10 @@ move_into_contact:
 
 
 follow_grinding_path:
-  default_outcome: Completed
   timeout: 10.0
   roco_controller: MabiMobileCombinedController                   # desired roco controller
   controller_manager_namespace: /mabi_mobile_highlevel_controller
-  sub_roco_controller: MabiExternalPathEndeffectorTrackingController #MabiExternalPathAdmittanceEndeffectorTrackingController  # desired roco controller
+  sub_roco_controller: MabiExternalPathAdmittanceEndeffectorTrackingController #MabiExternalPathAdmittanceEndeffectorTrackingController  # desired roco controller
   sub_controller_manager_namespace: /mabi_highlevel_controller
   path_topic_name: /mission_control/planned_path
 
