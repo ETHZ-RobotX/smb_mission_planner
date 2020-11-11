@@ -19,6 +19,10 @@ with state_machine:
                                             'Aborted': 'Failure'})
 
         smach.StateMachine.add('HAL_POSITIONING', HALInitialArmPositioning(ns="hal_positioning"),
+                               transitions={'Completed': 'INIT_HAL',
+                                            'Aborted': 'Failure'})
+        
+        smach.StateMachine.add('INIT_HAL', InitializeHAL(ns="init_hal"),
                                transitions={'Completed': 'ARM_RECORDED_MOTION',
                                             'Aborted': 'Failure'})
 

@@ -33,6 +33,11 @@ hal_positioning:
   reference_frame_id: base
   end_effector_frame_id: ENDEFFECTOR
 
+init_hal:
+  default_outcome: Completed
+  service_name: /initialize_hal_routine
+  timeout: 10.0
+
 arm_recorded_motion:
   default_outcome: NoMorePoses
   timeout: 10.0                                                   # max time before considering the pose reached

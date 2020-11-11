@@ -96,7 +96,7 @@ class HALInitialArmPositioning(EndEffectorRocoControl):
     def __init__(self, ns):
         EndEffectorRocoControl.__init__(self, ns=ns)
         self.target_offset = self.parse_pose(self.get_scoped_param("target_offset"))
-        
+
     def execute(self, ud):
         if not self.target_offset:
             rospy.logerr("Failed to parse the target end-effector pose for initial positioning in HAL routine")
@@ -144,6 +144,31 @@ class HALInitialArmPositioning(EndEffectorRocoControl):
 
         rospy.loginfo("Waiting {} before switch".format(self.timeout))
         rospy.sleep(self.timeout)
+        return 'Completed'
+
+
+class InitializeHAL(BaseStateRos):
+    """
+    Initializes the HAL routine once the end-effector is moved to its initial pose.
+    """
+
+    def __init__(self, ns):
+        BaseStateRos.__init__(self, outcomes=['Completed', 'Aborted'], ns=ns)
+        service_name = self.get_scoped_param("service_name")
+        self.timeout = self.get_scoped_param("timeout")
+        self.hal_init_service_client = rospy.ServiceProxy(service_name, Empty)
+
+    def execute(self, ud):
+        if self.default_outcome:
+            return self.default_outcome
+
+        try:
+            self.hal_init_service_client.wait_for_service(self.timeout)
+        except rospy.ROSException as exc:
+            rospy.logerr(exc)
+            return 'Aborted'
+
+        self.hal_init_service_client.call()
         return 'Completed'
 
 
