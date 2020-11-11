@@ -90,7 +90,11 @@ class HALInitialArmPositioning(EndEffectorRocoControl):
     """
     def __init__(self, ns):
         HALInitialArmPositioning.__init__(self, ns=ns)
-        self.target_pose = self.get_scoped_param("target_pose")
+        self.target_offset = self.parse_pose(self.get_scoped_param("target_offset"))
+
+        if not self.target_offset:
+            rospy.logerr("Failed to parse the target end-effector pose for initial positioning in HAL routine")
+            return 'Aborted'
 
     def execute(self, ud):
         raise NotImplementedError("The state HALInitialArmPositioning was not implemented yet.")

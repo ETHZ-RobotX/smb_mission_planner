@@ -20,7 +20,7 @@ nav_to_wall:
   tolerance_deg: 10                                               # position accuracy (degrees)
 
 hal_positioning:
-  target_pose:                                                    # target pose in the marker frame, with format t: [x, y, z], q: [qx, qy, qz, qw].
+  target_offset:                                                  # target pose of the end-effector in the marker frame, with format t: [x, y, z], q: [qx, qy, qz, qw].
     t: [0.0, 0.0, 2.0]                                            # TODO: Change these with sensible values!
     q: [0.0, 0.0, 0.0, 1.0]
 
