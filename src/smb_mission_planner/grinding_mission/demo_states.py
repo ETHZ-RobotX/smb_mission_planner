@@ -14,6 +14,10 @@ from smb_mission_planner.navigation_states import SingleNavGoalState
 from smb_mission_planner.manipulation_states import EndEffectorRocoControl
 from smb_mission_planner.utils.navigation_utils import nav_goal_from_path
 
+from geometry_msgs.msg import WrenchStamped
+
+from smb_mission_planner.utils.manipulation_utils import build_grinding_path_from_world_path
+
 
 class MissionStarter(BaseStateRos):
     """
@@ -328,12 +332,55 @@ class InitialPositioning(EndEffectorRocoControl):
         return 'Completed'
 
 
-class MoveIntoContact(BaseStateRos):
+# class MoveIntoContact(BaseStateRos):
+#     """
+#     Move the end effector into the wall commanding a desired interaction wrench
+#     """
+#     def __init__(self, ns):
+#         BaseStateRos.__init__(self, outcomes=['Completed', 'Aborted'], ns=ns)
+#         self.set_wrench_service_name = self.get_scoped_param("wrench_service_name")
+#         self.reset_reference = self.get_scoped_param("reset_reference")
+#         self.fx = self.get_scoped_param("force/x")
+#         self.fy = self.get_scoped_param("force/y")
+#         self.fz = self.get_scoped_param("force/z")
+#         self.set_wrench_service_client = rospy.ServiceProxy(self.set_wrench_service_name,
+#                                                             DesiredWrenchCurrentEEFrameReference)
+#         offset = self.get_scoped_param("travel")
+#         self.travel_pose = self.parse_pose(travel)
+
+#     def execute(self, ud):
+#         if self.default_outcome:
+#             return self.default_outcome
+
+#         try:
+#             self.set_wrench_service_client.wait_for_service(3.0)
+#         except rospy.ROSException as exc:
+#             rospy.logerr("Failed to call set wrench service: {}".format(exc))
+#             return 'Aborted'
+
+#         req = DesiredWrenchCurrentEEFrameReferenceRequest()
+#         req.wrench.force.x = self.fx
+#         req.wrench.force.y = self.fy
+#         req.wrench.force.z = self.fz
+#         req.wrench.torque.x = 0.0
+#         req.wrench.torque.y = 0.0
+#         req.wrench.torque.z = 0.0
+#         req.resetReference = self.reset_reference
+#         res = self.set_wrench_service_client.call(req)
+#         rospy.loginfo("{} responded with message: {}".format(self.set_wrench_service_name, res.message))
+#         if res.success:
+#             return 'Completed'
+#         else:
+#             return 'Aborted'
+
+
+
+class MoveIntoContact(EndEffectorRocoControl):
     """
-    Move the end effector into the wall commanding a desired interaction wrench
+    Does the grinding
     """
     def __init__(self, ns):
-        BaseStateRos.__init__(self, outcomes=['Completed', 'Aborted'], ns=ns)
+        EndEffectorRocoControl.__init__(self, ns=ns)
         self.set_wrench_service_name = self.get_scoped_param("wrench_service_name")
         self.reset_reference = self.get_scoped_param("reset_reference")
         self.fx = self.get_scoped_param("force/x")
@@ -342,9 +389,29 @@ class MoveIntoContact(BaseStateRos):
         self.set_wrench_service_client = rospy.ServiceProxy(self.set_wrench_service_name,
                                                             DesiredWrenchCurrentEEFrameReference)
 
+        travel = self.get_scoped_param("travel")
+
+        # Transformation from the first pose in the grinding path and a initializing pose
+        # for the end effector
+        self.travel_pose = self.parse_pose(travel)
+
+        ft_imu_sensor_topic = self.get_scoped_param("ft_imu_sensor_topic")
+
+        self.currentReading = WrenchStamped()
+
+        self.ft_subscriber = rospy.Subscriber(ft_imu_sensor_topic, WrenchStamped, self.ft_imu_sensor_callback)
+
+
+    def ft_imu_sensor_callback(self, msg):
+        self.currentReading = msg
+
     def execute(self, ud):
         if self.default_outcome:
             return self.default_outcome
+
+        if not self.switch_controller():
+            rospy.logerr("InitialPositioning failed: failed to switch controller")
+            return 'Aborted'
 
         try:
             self.set_wrench_service_client.wait_for_service(3.0)
@@ -360,12 +427,67 @@ class MoveIntoContact(BaseStateRos):
         req.wrench.torque.y = 0.0
         req.wrench.torque.z = 0.0
         req.resetReference = self.reset_reference
-        res = self.set_wrench_service_client.call(req)
-        rospy.loginfo("{} responded with message: {}".format(self.set_wrench_service_name, res.message))
-        if res.success:
-            return 'Completed'
-        else:
+        # res = self.set_wrench_service_client.call(req)
+        # rospy.loginfo("{} responded with message: {}".format(self.set_wrench_service_name, res.message))
+        # if res.success:
+        #     pass
+        # else:
+        #     return 'Aborted'
+
+
+        goal_path = Path()
+        goal_path.header.stamp = rospy.get_rostime()
+        goal_path.header.frame_id = "ENDEFFECTOR"
+
+        # get current end effector pose
+        current_pose = self.get_end_effector_pose()
+        if not current_pose:
             return 'Aborted'
+
+        goal_pose = self.travel_pose
+        goal_pose.header.frame_id = "ENDEFFECTOR"
+        goal_pose.header.stamp = rospy.get_rostime()
+
+        # same time, let mpc decide the timing
+        current_pose.header.stamp = rospy.get_rostime()
+        goal_path.poses.append(current_pose)
+
+        goal_pose.header.stamp = current_pose.header.stamp + rospy.Duration(self.timeout)
+        goal_path.poses.append(goal_pose)
+
+        rospy.loginfo("Publishing path for making contact.")
+        self.path_publisher.publish(goal_path)
+
+        startTime = rospy.get_rostime()
+        rate = rospy.Rate(10)
+        while rospy.get_rostime() - startTime < rospy.Duration(self.timeout):
+            print(rospy.get_rostime() - startTime)
+            print(self.currentReading.wrench.force.z)
+            if abs(self.currentReading.wrench.force.z) > 30.0:
+                break;
+            rate.sleep()
+
+        goal_path = Path()
+        goal_path.header.stamp = rospy.get_rostime()
+        goal_path.header.frame_id = "ENDEFFECTOR"
+
+        # get current end effector pose
+        current_pose = self.get_end_effector_pose()
+        if not current_pose:
+            return 'Aborted'
+
+        # same time, let mpc decide the timing
+        current_pose.header.stamp = rospy.get_rostime()
+        goal_path.poses.append(current_pose)
+
+        rospy.loginfo("Publishing stop path.")
+        self.path_publisher.publish(goal_path)
+
+        rospy.loginfo("Waiting 2.0 before switch")
+        rospy.sleep(2.0)
+        return 'Completed'
+
+
 
 
 class FollowGrindingPath(EndEffectorRocoControl):
@@ -375,41 +497,34 @@ class FollowGrindingPath(EndEffectorRocoControl):
     def __init__(self, ns):
         EndEffectorRocoControl.__init__(self, ns=ns)
 
+        self.wall_penetration = self.get_scoped_param("wall_penetration")
+
     def execute(self, ud):
         if self.default_outcome:
             return self.default_outcome
+
+        if not self.switch_controller():
+            rospy.logerr("InitialPositioning failed: failed to switch controller")
+            return 'Aborted'
 
         grinding_path = self.get_context_data("grinding_path")
         if not grinding_path:
             rospy.logerr("Failed to retrieve grinding_path from global context")
             return 'Aborted'
 
-        current_time = rospy.get_rostime()
-        grinding_path_transformed = copy.deepcopy(grinding_path)
-        grinding_path_transformed.header.frame_id = self.reference_frame
+        assert self.reference_frame == 'world'
 
-        if grinding_path.header.frame_id is not self.reference_frame:
-            rospy.loginfo("grinding path is in {} frame. Converting it to {} reference frame".
-                          format(grinding_path.header.frame_id,
-                                 self.reference_frame))
-            try:
-                transform = self.tf_buffer.lookup_transform(self.reference_frame,            # target frame
-                                                            grinding_path.header.frame_id,   # source frame
-                                                            rospy.Time(0),                   # tf at first available time
-                                                            rospy.Duration(3))               # wait for 3 seconds
-                for idx, pose in enumerate(grinding_path.poses):
-                    grinding_path_transformed.poses[idx] = tf2_geometry_msgs.do_transform_pose(pose, transform)
-                    grinding_path_transformed.poses[idx].header.stamp = current_time
+        rospy.sleep(1)
+        pose_ee_in_world = self.get_end_effector_pose()
 
-            except Exception as exc:
-                rospy.logerr("Failed lookup: {}".format(exc))
-                return 'Aborted'
 
-        grinding_path_transformed.poses.insert(0, self.get_end_effector_pose())
-        grinding_path_transformed.poses[0].header.stamp = current_time
-        self.path_publisher.publish(grinding_path_transformed)
-        rospy.loginfo("Waiting {} before switch".format(self.timeout))
-        rospy.sleep(self.timeout)
+        rospy.loginfo("Transforming path")
+        path_to_follow = build_grinding_path_from_world_path(grinding_path, pose_ee_in_world, self.wall_penetration)
+        rospy.loginfo("sending Path with %i poses", len(path_to_follow.poses))
+        self.path_publisher.publish(path_to_follow)
+        rospy.loginfo("Waiting 1 sec before switch")
+        rospy.sleep(1)
+        rospy.sleep(100)
         return 'Completed'
 
 
