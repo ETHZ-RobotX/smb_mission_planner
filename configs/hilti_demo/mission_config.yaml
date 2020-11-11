@@ -20,12 +20,13 @@ nav_to_wall:
   tolerance_deg: 10                                               # position accuracy (degrees)
 
 hal_positioning:
+  default_outcome: Completed
   timeout: 10.0                                                   # max time before considering the pose reached
   roco_controller: MabiMobileCombinedController                   # desired roco controller
   controller_manager_namespace: /mabi_mobile_highlevel_controller
   sub_roco_controller: MabiExternalPathEndeffectorTrackingController  # desired roco controller
-  sub_controller_manager_namespace: /mabi_mobile_highlevel_controller/MabiMobileCombinedController/
-  path_topic_name: /mabi_mobile_highlevel_controller/MabiMobileCombinedController/external_path
+  sub_controller_manager_namespace: /mabi_highlevel_controller
+  path_topic_name: /mission_control/planned_path
   target_offset:                                                  # target pose of the end-effector in the marker frame, with format t: [x, y, z], q: [qx, qy, qz, qw].
     t: [-4.0, 1.0, 1.0]                                            # TODO: Change these with sensible values!
     q: [ -0.7071068, 0, 0.7071068, 0 ]                  # -90 y, 180 z
@@ -39,8 +40,8 @@ arm_recorded_motion:
   roco_controller: MabiMobileCombinedController                   # desired roco controller
   controller_manager_namespace: /mabi_mobile_highlevel_controller
   sub_roco_controller: MabiExternalPathAdmittanceEndeffectorTrackingController  # desired roco controller
-  sub_controller_manager_namespace: /mabi_mobile_highlevel_controller/MabiMobileCombinedController/
-  path_topic_name: /mabi_mobile_highlevel_controller/MabiMobileCombinedController/external_path
+  sub_controller_manager_namespace: /mabi_highlevel_controller
+  path_topic_name: /mission_control/planned_path
 
   reference_frame_id: base
   end_effector_frame_id: ENDEFFECTOR
@@ -96,8 +97,8 @@ move_into_contact:
   roco_controller: MabiMobileCombinedController                   # desired roco controller
   controller_manager_namespace: /mabi_mobile_highlevel_controller
   sub_roco_controller: MabiExternalPathAdmittanceEndeffectorTrackingController  # desired roco controller
-  sub_controller_manager_namespace: /mabi_mobile_highlevel_controller/MabiMobileCombinedController/
-  path_topic_name: /mabi_mobile_highlevel_controller/MabiMobileCombinedController/external_path
+  sub_controller_manager_namespace: /mabi_highlevel_controller
+  path_topic_name: /mission_control/planned_path
   reference_frame_id: ENDEFFECTOR
   end_effector_frame_id: ENDEFFECTOR
 
@@ -109,8 +110,8 @@ follow_grinding_path:
   roco_controller: MabiMobileCombinedController                   # desired roco controller
   controller_manager_namespace: /mabi_mobile_highlevel_controller
   sub_roco_controller: MabiExternalPathEndeffectorTrackingController #MabiExternalPathAdmittanceEndeffectorTrackingController  # desired roco controller
-  sub_controller_manager_namespace: /mabi_mobile_highlevel_controller/MabiMobileCombinedController/
-  path_topic_name: /mabi_mobile_highlevel_controller/MabiMobileCombinedController/external_path
+  sub_controller_manager_namespace: /mabi_highlevel_controller
+  path_topic_name: /mission_control/planned_path
 
   reference_frame_id: world
   end_effector_frame_id: ENDEFFECTOR
