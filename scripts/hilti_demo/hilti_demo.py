@@ -15,6 +15,10 @@ with state_machine:
                                             'Aborted': 'Failure'})
 
         smach.StateMachine.add('NAV_TO_WALL', NavigateToWall(ns="nav_to_wall"),
+                               transitions={'Completed': 'HAL_POSITIONING',
+                                            'Aborted': 'Failure'})
+
+        smach.StateMachine.add('HAL_POSITIONING', HALInitialArmPositioning(ns="hal_positioning"),
                                transitions={'Completed': 'ARM_RECORDED_MOTION',
                                             'Aborted': 'Failure'})
 

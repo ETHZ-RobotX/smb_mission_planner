@@ -83,6 +83,18 @@ class NavigateToWall(SingleNavGoalState):
             return 'Aborted'
 
 
+class HALInitialArmPositioning(EndEffectorRocoControl):
+    """
+    Positions the end-effector to an initial pose required for the HAL routine. The pose is
+    read from the parameter server and is expressed in the marker frame.
+    """
+    def __init__(self, ns):
+        HALInitialArmPositioning.__init__(self, ns=ns)
+
+    def execute(self, ud):
+        raise NotImplementedError("The state HALInitialArmPositioning was not implemented yet.")
+
+
 class ArmPosesVisitor(EndEffectorRocoControl):
     """
     Visits a sequence of poses for the end effector. Whenever this state is accessed again (because of a loop
