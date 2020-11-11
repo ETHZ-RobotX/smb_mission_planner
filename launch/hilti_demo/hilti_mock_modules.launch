@@ -10,6 +10,7 @@
       <param name="base_odom_topic"                   value="/base_pose_measured"/>
       <param name="ee_goal_topic"                     value="/pose_topic_name"/>
       <param name="controller_manager_namespace"      value="/mabi_mobile_highlevel_controller"/>
+      <param name="sub_controller_manager_namespace"  value="/mabi_mobile_highlevel_controller/MabiMobileCombinedController"/>
       <param name="hal_optimization_service_name"     value="/high_accuracy_localize"/>
       <param name="hal_data_collection_service_name"  value="/hal_take_measurement"/>
       <param name="hal_update_topic_name"             value="/building_task_manager/task_offset_target_pose"/>
@@ -25,8 +26,8 @@
     </node>
 
     <node pkg="tf2_ros" type="static_transform_publisher" name="base_tf_broadcaster" args="0 0 0 0 0 0 world base" />
-    <node pkg="tf2_ros" type="static_transform_publisher" name="ee_tf_broadcaster" args="1 1 1 0 0 0 base end_effector" />
-
+    <node pkg="tf2_ros" type="static_transform_publisher" name="ee_tf_broadcaster" args="1 1 1 0 0 0 base ENDEFFECTOR" />
+    <node pkg="tf2_ros" type="static_transform_publisher" name="marker_tf_broadcaster" args="1 0 1 0 0 0 world marker" />
     <group if="$(arg rviz)">
         <node name="rviz" type="rviz" pkg="rviz" args="-d $(find smb_mission_planner)/configs/hilti_demo/config.rviz" output="screen"/>
     </group>

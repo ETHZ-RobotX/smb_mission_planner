@@ -36,6 +36,14 @@ def switch_roco_controller_service(req):
     return res
 
 
+def switch_sub_roco_controller_service(req):
+    rospy.sleep(1.0)
+    rospy.loginfo("Switching to controller: " + str(req.name))
+    res = SwitchControllerResponse()
+    res.status = res.STATUS_SWITCHED
+    return res
+
+
 def hal_data_callback(_):
     rospy.loginfo("Received a hal data collection request. Sleeping 1.0 sec and returning")
     rospy.sleep(1.0)
@@ -68,6 +76,7 @@ if __name__ == "__main__":
 
     ee_goal_topic = rospy.get_param("~ee_goal_topic")
     controller_manager_ns = rospy.get_param("~controller_manager_namespace", "/smb_highlevel_controller")
+    sub_controller_manager_ns = rospy.get_param("~sub_controller_manager_namespace", "/smb_highlevel_controller")
 
     hal_optimization_service_name = rospy.get_param("~hal_optimization_service_name")
     hal_data_collection_service_name = rospy.get_param("~hal_data_collection_service_name")
@@ -81,6 +90,9 @@ if __name__ == "__main__":
     roco_service = rospy.Service(controller_manager_ns + "/controller_manager/switch_controller",
                                  SwitchController,
                                  switch_roco_controller_service)
+    sub_roco_service = rospy.Service(
+        sub_controller_manager_ns + "/controller_manager/switch_controller",
+        SwitchController, switch_sub_roco_controller_service)
 
     hal_data_service = rospy.Service(hal_data_collection_service_name, Empty, hal_data_callback)
     hal_optm_service = rospy.Service(hal_optimization_service_name, HighAccuracyLocalization, hal_optimization_callback)

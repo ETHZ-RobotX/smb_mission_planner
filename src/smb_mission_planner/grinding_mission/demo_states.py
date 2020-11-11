@@ -13,6 +13,7 @@ from smb_mission_planner.base_state_ros import BaseStateRos
 from smb_mission_planner.navigation_states import SingleNavGoalState
 from smb_mission_planner.manipulation_states import EndEffectorRocoControl
 from smb_mission_planner.utils.navigation_utils import nav_goal_from_path
+from smb_mission_planner.utils.manipulation_utils import pose_from_frame_and_header, frame_from_pose
 
 from geometry_msgs.msg import WrenchStamped
 
@@ -87,6 +88,65 @@ class NavigateToWall(SingleNavGoalState):
             return 'Aborted'
 
 
+class HALInitialArmPositioning(EndEffectorRocoControl):
+    """
+    Positions the end-effector to an initial pose required for the HAL routine. The pose is
+    read from the parameter server and is expressed in the marker frame.
+    """
+    def __init__(self, ns):
+        EndEffectorRocoControl.__init__(self, ns=ns)
+        self.target_offset = self.parse_pose(self.get_scoped_param("target_offset"))
+        
+    def execute(self, ud):
+        if not self.target_offset:
+            rospy.logerr("Failed to parse the target end-effector pose for initial positioning in HAL routine")
+            return 'Aborted'
+
+        if self.default_outcome:
+            return self.default_outcome
+
+        if not self.switch_controller():
+            rospy.logerr(
+                "InitialPositioning failed: failed to switch controller")
+            return 'Aborted'
+
+        goal_path = Path()
+        goal_path.header.stamp = rospy.get_rostime()
+        goal_path.header.frame_id = self.reference_frame
+
+        # Get current end effector pose.
+        current_pose = self.get_end_effector_pose()
+        if not current_pose:
+            return 'Aborted'
+
+        # Transform the target pose from the marker frame to the reference frame.
+        tf_ref_marker = TransformStamped()
+        try:
+            tf_ref_marker = self.tf_buffer.lookup_transform(self.reference_frame,  # target frame
+                                                            "marker",              # source frame
+                                                            rospy.Time(0),         # tf at first available time
+                                                            rospy.Duration(3))     # wait for 3 seconds
+        except Exception as exc:
+            rospy.logerr(exc)
+            return 'Aborted'
+        goal_pose = tf2_geometry_msgs.do_transform_pose(self.target_offset, tf_ref_marker)
+        goal_pose.header.frame_id = self.reference_frame
+
+        # same time, let mpc decide the timing
+        current_pose.header.stamp = rospy.get_rostime()
+        goal_path.poses.append(current_pose)
+
+        goal_pose.header.stamp = rospy.get_rostime() + rospy.Duration(self.timeout) - rospy.Duration(1.0)
+        goal_path.poses.append(goal_pose)
+
+        rospy.loginfo("Publishing path for initial positioning of the end-effector for the HAL routine.")
+        self.path_publisher.publish(goal_path)
+
+        rospy.loginfo("Waiting {} before switch".format(self.timeout))
+        rospy.sleep(self.timeout)
+        return 'Completed'
+
+
 class ArmPosesVisitor(EndEffectorRocoControl):
     """
     Visits a sequence of poses for the end effector. Whenever this state is accessed again (because of a loop
@@ -99,6 +159,7 @@ class ArmPosesVisitor(EndEffectorRocoControl):
      - {t : [0.1, 1.0, 2.0],
         q:  [0.0, 0.0, 0.0, 1.0]}
      - ...
+    NOTE: These poses are *relative* to the previous pose of the end effector.
 
     """
     def __init__(self, ns):
@@ -143,8 +204,12 @@ class ArmPosesVisitor(EndEffectorRocoControl):
         if not current_pose:
             return 'Aborted'
 
-        goal_pose = self.poses_ros[self.pose_idx]
+        # Transform the relative pose read from the config file to a pose in the reference frame.
+        goal_frame = frame_from_pose(current_pose) * frame_from_pose(self.poses_ros[self.pose_idx])
+        
+        goal_pose = PoseStamped()
         goal_pose.header.frame_id = self.reference_frame
+        goal_pose = pose_from_frame_and_header(goal_frame, goal_pose.header)
 
         # same time, let mpc decide the timing
         current_pose.header.stamp = rospy.get_rostime()
