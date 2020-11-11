@@ -30,7 +30,7 @@ arm_recorded_motion:
 
   reference_frame_id: base
   end_effector_frame_id: ENDEFFECTOR
-  poses:                                                          # list of target poses in format t: [x, y, z], q: [qx, qy, qz, qw]
+  poses:                                                          # list of target poses in format t: [x, y, z], q: [qx, qy, qz, qw]. Note: these poses are relative to the previous pose of the end effector.
     - t: [0.0, 0.0, 0.0]
       q: [0.0, 0.0, 0.0, 1.0]
     - t: [0.2, 1.0, 3.0]

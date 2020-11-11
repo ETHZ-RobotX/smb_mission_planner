@@ -95,6 +95,7 @@ class ArmPosesVisitor(EndEffectorRocoControl):
      - {t : [0.1, 1.0, 2.0],
         q:  [0.0, 0.0, 0.0, 1.0]}
      - ...
+    NOTE: These poses are *relative* to the previous pose of the end effector.
 
     """
     def __init__(self, ns):
@@ -139,7 +140,8 @@ class ArmPosesVisitor(EndEffectorRocoControl):
         if not current_pose:
             return 'Aborted'
 
-        goal_pose = self.poses_ros[self.pose_idx]
+        # Transform the relative pose read from the config file to a pose in the reference frame.
+        goal_pose = tf2_geometry_msgs.do_transform_pose(self.poses_ros[self.pose_idx], current_pose)
         goal_pose.header.frame_id = self.reference_frame
 
         # same time, let mpc decide the timing
