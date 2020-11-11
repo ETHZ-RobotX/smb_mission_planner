@@ -13,7 +13,7 @@ nav_to_wall:
   normal_direction: -1                                            # can be either 1 or -1
   goal_pose_topic: /move_base_simple/goal
   base_pose_topic: /base_pose_measured
-  roco_controller: MpcTrackLocalPlan
+  roco_controller: MpcPathFollowingController
   controller_manager_namespace: /mabi_mobile_highlevel_controller
   timeout: 30.0                                                   # max time to reach the goal within accuracy
   tolerance_m: 0.3                                                # position accuracy (meters)
