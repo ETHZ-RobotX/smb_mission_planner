@@ -13,6 +13,7 @@ from smb_mission_planner.base_state_ros import BaseStateRos
 from smb_mission_planner.navigation_states import SingleNavGoalState
 from smb_mission_planner.manipulation_states import EndEffectorRocoControl
 from smb_mission_planner.utils.navigation_utils import nav_goal_from_path
+from smb_mission_planner.utils.manipulation_utils import pose_from_frame_and_header, frame_from_pose
 
 from geometry_msgs.msg import WrenchStamped
 
@@ -204,7 +205,8 @@ class ArmPosesVisitor(EndEffectorRocoControl):
             return 'Aborted'
 
         # Transform the relative pose read from the config file to a pose in the reference frame.
-        goal_pose = tf2_geometry_msgs.do_transform_pose(self.poses_ros[self.pose_idx], current_pose)
+        goal_frame = frame_from_pose(current_pose) * frame_from_pose(self.poses_ros[self.pose_idx])
+        goal_pose = pose_from_frame_and_header(goal_frame, self.reference_frame)
         goal_pose.header.frame_id = self.reference_frame
 
         # same time, let mpc decide the timing
