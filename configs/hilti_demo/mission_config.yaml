@@ -3,7 +3,7 @@
 # !!! Modify with care !!!
 
 mission_start:
-  # default_outcome: Completed
+  default_outcome: Completed
   path_topic_name: /mabi_highlevel_controller/path_direct
   timeout: 10.0
 
@@ -28,8 +28,8 @@ hal_positioning:
   sub_controller_manager_namespace: /mabi_highlevel_controller
   path_topic_name: /mission_control/planned_path
   target_offset:                                                  # target pose of the end-effector in the marker frame, with format t: [x, y, z], q: [qx, qy, qz, qw].
-    t: [-4.0, 1.0, 1.0]                                            # TODO: Change these with sensible values!
-    q: [ -0.7071068, 0, 0.7071068, 0 ]                  # -90 y, 180 z
+    t: [2.5, 5.61, 0.62]                                            # TODO: Change these with sensible values!
+    q: [ -0.736, 0.677, 0.006, -0.02 ]                 
 
   reference_frame_id: marker
   end_effector_frame_id: ENDEFFECTOR

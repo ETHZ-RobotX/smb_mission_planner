@@ -94,7 +94,7 @@ def build_grinding_path_from_world_path(grinding_path, end_effector_pose_in_worl
 
     initial_path_position = frame_from_pose(end_effector_pose_in_world_frame).p + distance_vector_in_world_frame
 
-    translation_vector = initial_path_position - first_pose.p
+    translation_vector = initial_path_position - initial_path_position
 
     return_path.header.stamp = rospy.Time(0)
 
@@ -107,7 +107,7 @@ def build_grinding_path_from_world_path(grinding_path, end_effector_pose_in_worl
         translated_frame = PyKDL.Frame(pose_as_frame.M, translated_point)
         return_path.poses.append(pose_from_frame_and_header(translated_frame, pose.header))
         if last_translated_point is None:
-            return_path.poses[-1].header.stamp = rospy.Time(0.1)
+            return_path.poses[-1].header.stamp = rospy.Time(3.0)
         else:
             difference_vector =  translated_point - last_translated_point
             velocity = 0.1
