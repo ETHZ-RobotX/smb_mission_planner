@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python
 
 import argparse
 from smb_mission_planner.mission_planner import MissionPlanner

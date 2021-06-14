@@ -1,8 +1,8 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python
 
 import rospy
 import collections
-import oyaml as yaml
+import yaml
 import tf
 from geometry_msgs.msg import PoseStamped
 from smb_mission_planner.srv import RecordMission, RecordMissionResponse

@@ -1,13 +1,13 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python
 
 import math
 import rospy
-import oyaml as yaml
+import yaml
 import tf
 import smach
 import smach_ros
 from geometry_msgs.msg import PoseStamped
-import mission_plan
+#from smb_mission_planner import mission_plan
 
 
 class MissionPlanner():
