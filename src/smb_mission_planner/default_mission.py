@@ -1,49 +1,27 @@
 #!/usr/bin/env python
 
-import smach
+import math
 import rospy
-import tf
 import smach
 import smach_ros
 from geometry_msgs.msg import PoseStamped
 
-class MissionPlan():
-    def __init__(self, missions_data, topic_names):
-        self.missions_data = missions_data
-        self.topic_names = topic_names
-
-
-    def createStateMachine(self):
-        state_machine = smach.StateMachine(outcomes=['Success', 'Failure'])
-        with state_machine:
-            smach.StateMachine.add('Mission 1', DefaultMission(self.missions_data['check_fire_hazard'], self.topic_names),
-            transitions={'Completed':'Mission 2', 'Aborted':'Failure', 'Next Waypoint':'Mission 1'})
-
-            smach.StateMachine.add('Mission 2', DefaultMission(self.missions_data['gather_fruits'], self.topic_names),
-            transitions={'Completed':'Success', 'Aborted':'Mission 3', 'Next Waypoint':'Mission 2'})
-
-            smach.StateMachine.add('Mission 3', DefaultMission(self.missions_data['gather_vegetables'], self.topic_names),
-            transitions={'Completed':'Success', 'Aborted':'Failure', 'Next Waypoint':'Mission 3'})
-
-        return state_machine
-
 
 class DefaultMission(smach.State):
-    def __init__(self, mission_data, topic_names):
+    def __init__(self, mission_data):
         smach.State.__init__(self, outcomes=['Completed', 'Aborted', 'Next Waypoint'])
         self.mission_data = mission_data
         self.waypoint_idx = 0
-        self.topic_names = topic_names
 
-        self.waypoint_pose_publisher = rospy.Publisher(topic_names['waypoint'], PoseStamped, queue_size=1)
-        self.base_pose_subscriber = rospy.Subscriber(topic_names['base_pose'], PoseStamped, self.basePoseCallback)
+        self.waypoint_pose_publisher = rospy.Publisher(waypoint_topic_name_global, PoseStamped, queue_size=1)
+        self.base_pose_subscriber = rospy.Subscriber(base_pose_topic_name_global, PoseStamped, self.basePoseCallback)
         while self.waypoint_pose_publisher.get_num_connections() == 0 and not rospy.is_shutdown():
-            rospy.loginfo_once("Waiting for subscriber to connect to '" +
-                          topic_names['waypoint'] + "'.")
+            rospy.loginfo("Waiting for subscriber to connect to '" +
+                          waypoint_topic_name_global + "'.")
             rospy.sleep(1)
         while self.base_pose_subscriber.get_num_connections() == 0 and not rospy.is_shutdown():
-            rospy.loginfo_once("Waiting for publisher to connect to '" +
-                          topic_names['base_pose'] + "'.")
+            rospy.loginfo("Waiting for publisher to connect to '" +
+                          base_pose_topic_name_global + "'.")
             rospy.sleep(1)
 
         self.countdown_s = 60
