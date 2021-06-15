@@ -57,7 +57,7 @@ class DefaultMission(smach.State):
             self.waypoint_idx = 0
             return 'Completed'
 
-        current_waypoint_name = self.mission_data.keys()[self.waypoint_idx]
+        current_waypoint_name = list(self.mission_data.keys())[self.waypoint_idx]
         current_waypoint = self.mission_data[current_waypoint_name]
 
         self.setWaypoint(current_waypoint['x_m'], current_waypoint['y_m'], current_waypoint['yaw_rad'])
