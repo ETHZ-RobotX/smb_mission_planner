@@ -6,6 +6,8 @@ import tf
 import smach
 import smach_ros
 from geometry_msgs.msg import PoseStamped
+from nav_msgs.msg import Odometry
+import math
 
 class MissionPlan():
     def __init__(self, missions_data, topic_names):
@@ -16,14 +18,8 @@ class MissionPlan():
     def createStateMachine(self):
         state_machine = smach.StateMachine(outcomes=['Success', 'Failure'])
         with state_machine:
-            smach.StateMachine.add('Mission 1', DefaultMission(self.missions_data['check_fire_hazard'], self.topic_names),
-            transitions={'Completed':'Mission 2', 'Aborted':'Failure', 'Next Waypoint':'Mission 1'})
-
-            smach.StateMachine.add('Mission 2', DefaultMission(self.missions_data['gather_fruits'], self.topic_names),
-            transitions={'Completed':'Success', 'Aborted':'Mission 3', 'Next Waypoint':'Mission 2'})
-
-            smach.StateMachine.add('Mission 3', DefaultMission(self.missions_data['gather_vegetables'], self.topic_names),
-            transitions={'Completed':'Success', 'Aborted':'Failure', 'Next Waypoint':'Mission 3'})
+            smach.StateMachine.add('Mission 1', DefaultMission(self.missions_data['test_mission'], self.topic_names),
+            transitions={'Completed':'Success', 'Aborted':'Failure', 'Next Waypoint':'Mission 1'})
 
         return state_machine
 
@@ -36,7 +32,7 @@ class DefaultMission(smach.State):
         self.topic_names = topic_names
 
         self.waypoint_pose_publisher = rospy.Publisher(topic_names['waypoint'], PoseStamped, queue_size=1)
-        self.base_pose_subscriber = rospy.Subscriber(topic_names['base_pose'], PoseStamped, self.basePoseCallback)
+        self.base_pose_subscriber = rospy.Subscriber(topic_names['base_pose'], Odometry, self.basePoseCallback)
         while self.waypoint_pose_publisher.get_num_connections() == 0 and not rospy.is_shutdown():
             rospy.loginfo_once("Waiting for subscriber to connect to '" +
                           topic_names['waypoint'] + "'.")
@@ -48,7 +44,7 @@ class DefaultMission(smach.State):
 
         self.countdown_s = 60
         self.countdown_decrement_s = 1
-        self.distance_to_waypoint_tolerance_m = 0.3
+        self.distance_to_waypoint_tolerance_m = 0.6
         self.angle_to_waypoint_tolerance_rad = 0.7
 
     def execute(self, userdata):
@@ -90,7 +86,7 @@ class DefaultMission(smach.State):
         pose_stamped_msg.header.seq = 0
         pose_stamped_msg.header.stamp.secs = rospy.get_rostime().secs
         pose_stamped_msg.header.stamp.nsecs = rospy.get_rostime().nsecs
-        pose_stamped_msg.header.frame_id = "world"
+        pose_stamped_msg.header.frame_id = "tracking_camera_odom"
         pose_stamped_msg.pose.position.x = x_m
         pose_stamped_msg.pose.position.y = y_m
         pose_stamped_msg.pose.position.z = 0.
@@ -104,12 +100,12 @@ class DefaultMission(smach.State):
         self.waypoint_y_m = y_m
         self.waypoint_yaw_rad = yaw_rad
 
-    def basePoseCallback(self, pose_stamped_msg):
+    def basePoseCallback(self, Odometry_msg):
         rospy.loginfo_once("Estimated base pose received from now on.")
 
-        x_m = pose_stamped_msg.pose.position.x
-        y_m = pose_stamped_msg.pose.position.y
-        quaternion = pose_stamped_msg.pose.orientation
+        x_m = Odometry_msg.pose.pose.position.x
+        y_m = Odometry_msg.pose.pose.position.y
+        quaternion = Odometry_msg.pose.pose.orientation
         explicit_quat = [quaternion.x, quaternion.y, quaternion.z, quaternion.w]
         roll_rad, pitch_rad, yaw_rad = tf.transformations.euler_from_quaternion(explicit_quat)
 
@@ -123,8 +119,8 @@ class DefaultMission(smach.State):
             angle_to_waypoint = abs(self.waypoint_yaw_rad - self.estimated_yaw_rad)
             distance_to_waypoint_satisfied = (distance_to_waypoint <= self.distance_to_waypoint_tolerance_m)
             angle_to_waypoint_satisfied = (angle_to_waypoint <= self.angle_to_waypoint_tolerance_rad)
-
-            return distance_to_waypoint_satisfied and angle_to_waypoint_satisfied
+            # rospy.loginfo(distance_to_waypoint)
+            return (distance_to_waypoint_satisfied and angle_to_waypoint_satisfied)
         except:
             rospy.logwarn("No estimated base pose received yet.")
             return False;
