@@ -7,6 +7,7 @@ import tf
 import smach
 import smach_ros
 from geometry_msgs.msg import PoseStamped
+from nav_msgs.msg import Odometry
 import smb_mission_planner.mission_plan
 
 

@@ -10,7 +10,11 @@ from smb_mission_planner.srv import RemoveMission, RemoveMissionResponse
 from smb_mission_planner.srv import RemoveWaypoint, RemoveWaypointResponse
 from smb_mission_planner.srv import ToggleFileDump, ToggleFileDumpResponse
 from smb_mission_planner.srv import RecordBasePose, RecordBasePoseResponse
+from collections import OrderedDict
 
+def ordered_dict_representer(self, value):  # can be a lambda if that's what you prefer
+    return self.represent_mapping('tag:yaml.org,2002:map', value.items())
+yaml.add_representer(OrderedDict, ordered_dict_representer)
 class MissionRecorder():
     def __init__(self, yaml_file_path, waypoint_topic_name, base_pose_topic_name):
         self.yaml_file_path = yaml_file_path
