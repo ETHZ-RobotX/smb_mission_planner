@@ -6,16 +6,6 @@ The mission planner is based on the popular state machine library `smach`, but n
 ### IMPORTANT INFORMATION
 The smatch_viewer has not been ported to Python3 and ROS Noetic. So don't use it in SMB.
 
-#### Library overview
-- `navigation_states.py` : contains all navigation related states, as for example parsing and navigating
-through a list of waypoints. Check the script for more documentation.
-- `detection_states.py`: contains all detection related states. One might implement object detection using a 
-service call. We already provide a detection service which is called in the execute function and this expect the 
-object name, pose and success flag to be returned by the detector. 
-- `manipulation_states.py`: as the name suggests, this script contains all manipulation related states. All implemented 
- states are currently based on MoveIt. More info in the states' documentation.
-- `utils`: collection of utilities which are frequently used by mission states. These can be a wrapper to switch controller, 
-sending moveit a specific plan or recording a waypoint-based navigation mission.
 
 Some terminology to start with:
 In the context of this package, a waypoint denotes a named pose in the global frame.
@@ -32,6 +22,16 @@ The proposed workflow for mission planning is as follows:
 
 Each of these steps is explained in detail in the upcoming sections.
 
+#### Library overview
+- `navigation_states.py` : contains all navigation related states, as for example parsing and navigating
+through a list of waypoints. Check the script for more documentation.
+- `detection_states.py`: contains all detection related states. One might implement object detection using a 
+service call. We already provide a detection service which is called in the execute function and this expect the 
+object name, pose and success flag to be returned by the detector. 
+- `manipulation_states.py`: as the name suggests, this script contains all manipulation related states. All implemented 
+ states are currently based on MoveIt. More info in the states' documentation.
+- `utils`: collection of utilities which are frequently used by mission states. These can be a wrapper to switch controller, 
+sending moveit a specific plan or recording a waypoint-based navigation mission.
 
 ## Installation
 (Could be added to the dependencies at a later stage.)
@@ -40,6 +40,7 @@ Each of these steps is explained in detail in the upcoming sections.
 - Install `smach_ros` from [here](http://wiki.ros.org/smach_ros) (a state machine library written in python with ROS support)
 - Install `oyaml` with `pip install oyaml` (enables python2 compatibility with ordered dicts for `yaml` file dump)
 - (Buid the package with `catkin build smb_mission_planner`)
+
 
 
 ## Record missions
