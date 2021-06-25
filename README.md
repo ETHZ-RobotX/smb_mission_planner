@@ -3,6 +3,20 @@ This repo adds mission planning functionality to the stack.
 Because it should be easy to get into the code and modify it, everything is kept compact and at a minimum level of abstraction.
 The mission planner is based on the popular state machine library `smach`, but no prior knowledge is required.
 
+### IMPORTANT INFORMATION
+The smatch_viewer has not been ported to Python3 and Noetic. So use it in SMB.
+
+#### Library overview
+- `navigation_states.py` : contains all navigation related states, as for example parsing and navigating
+through a list of waypoints. Check the script for more documentation.
+- `detection_states.py`: contains all detection related states. One might implement object detection using a 
+service call. We already provide a detection service which is called in the execute function and this expect the 
+object name, pose and success flag to be returned by the detector. 
+- `manipulation_states.py`: as the name suggests, this script contains all manipulation related states. All implemented 
+ states are currently based on MoveIt. More info in the states' documentation.
+- `utils`: collection of utilities which are frequently used by mission states. These can be a wrapper to switch controller, 
+sending moveit a specific plan or recording a waypoint-based navigation mission.
+
 Some terminology to start with:
 In the context of this package, a waypoint denotes a named pose in the global frame.
 A mission is a collection of tasks which are executed sequentially (e.g. a path through several waypoints).
