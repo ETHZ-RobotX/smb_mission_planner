@@ -43,6 +43,19 @@ object name, pose and success flag to be returned by the detector.
 - `utils`: collection of utilities which are frequently used by mission states. These can be a wrapper to switch controller, 
 sending moveit a specific plan or recording a waypoint-based navigation mission.
 
+#### Constructing a State Machine
+A mission plan (state machine) defines the connections (transitions) between different states. 
+The mission plan is implemented as a `smach` state machine.
+
+The proposed workflow for planning a navigation mission could be as follows:
+
+1. Record mission data by using the `mission_recorder`
+2. Create a plan for your missions in the `mission_plan`
+3. Execute your missions by using the `mission_planner`
+
+Each of these steps is explained in detail in the upcoming sections.
+
+
 ## Record missions
 
 ### Basic Features
