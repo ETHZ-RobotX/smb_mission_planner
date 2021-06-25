@@ -4,7 +4,7 @@ Because it should be easy to get into the code and modify it, everything is kept
 The mission planner is based on the popular state machine library `smach`, but no prior knowledge is required.
 
 ### IMPORTANT INFORMATION
-The smatch_viewer has not been ported to Python3 and Noetic. So use it in SMB.
+The smatch_viewer has not been ported to Python3 and ROS Noetic. So don't use it in SMB.
 
 #### Library overview
 - `navigation_states.py` : contains all navigation related states, as for example parsing and navigating
