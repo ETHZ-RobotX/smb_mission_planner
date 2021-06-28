@@ -1,11 +1,11 @@
+
+## IMPORTANT INFORMATION
+The smatch_viewer has not been ported to Python3 and ROS Noetic. So don't use it in SMB.
+
 ## General Info
 This repo adds mission planning functionality to the stack.
 Because it should be easy to get into the code and modify it, everything is kept compact and at a minimum level of abstraction.
 The mission planner is based on the popular state machine library `smach`, but no prior knowledge is required.
-
-### IMPORTANT INFORMATION
-The smatch_viewer has not been ported to Python3 and ROS Noetic. So don't use it in SMB.
-
 
 Some terminology to start with:
 In the context of this package, a waypoint denotes a named pose in the global frame.
