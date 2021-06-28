@@ -32,16 +32,6 @@ Each of these steps is explained in detail in the upcoming sections.
 - (Buid the package with `catkin build smb_mission_planner`)
 
 
-#### Library overview
-- `navigation_states.py` : contains all navigation related states, as for example parsing and navigating
-through a list of waypoints. Check the script for more documentation.
-- `detection_states.py`: contains all detection related states. One might implement object detection using a 
-service call. We already provide a detection service which is called in the execute function and this expect the 
-object name, pose and success flag to be returned by the detector. 
-- `manipulation_states.py`: as the name suggests, this script contains all manipulation related states. All implemented 
- states are currently based on MoveIt. More info in the states' documentation.
-- `utils`: collection of utilities which are frequently used by mission states. These can be a wrapper to switch controller, 
-sending moveit a specific plan or recording a waypoint-based navigation mission.
 
 #### Constructing a State Machine
 A mission plan (state machine) defines the connections (transitions) between different states. 
