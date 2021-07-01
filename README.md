@@ -129,10 +129,12 @@ To learn more about it, visit the [tutorials](http://wiki.ros.org/smach/Tutorial
 Make sure to assign to each mission its respective mission data, i.e. its recorded information of the `yaml` file.
 
 Currently, we provide you with a `DefaultMission` (see the file `mission_planner.py`), which implements the following:
-	- Waypoints are set one by one, in the order they were defined in each mission in the `yaml` config file.
-	- If the robot is unable to reach a waypoint for 60 seconds, it will skip it.
-	- A waypoint is reached if the xy-position and the yaw-angle are within a certain tolerance.
-	- If it cannot find the start of a mission, it will abort it.
+
+- Waypoints are set one by one, in the order they were defined in each mission in the `yaml` config file.
+- If the robot is unable to reach a waypoint for 60 seconds, it will skip it.
+- A waypoint is reached if the xy-position and the yaw-angle are within a certain tolerance.
+- If it cannot find the start of a mission, it will abort it.
+
 To add a new mission type with your custom behaviour, see the next subsection below.
 
 ### Advanced features
