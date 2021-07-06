@@ -11,6 +11,7 @@ from smb_mission_planner.srv import RemoveWaypoint, RemoveWaypointResponse
 from smb_mission_planner.srv import ToggleFileDump, ToggleFileDumpResponse
 from smb_mission_planner.srv import RecordBasePose, RecordBasePoseResponse
 from collections import OrderedDict
+from nav_msgs.msg import Odometry
 
 def ordered_dict_representer(self, value):  # can be a lambda if that's what you prefer
     return self.represent_mapping('tag:yaml.org,2002:map', value.items())
@@ -28,7 +29,7 @@ class MissionRecorder():
         self.file_dump_on = True
 
         self.waypoint_pose_subscriber = rospy.Subscriber(self.waypoint_topic_name, PoseStamped, self.waypointCallback)
-        self.base_pose_subscriber = rospy.Subscriber(self.base_pose_topic_name, PoseStamped, self.basePoseCallback)
+        self.base_pose_subscriber = rospy.Subscriber(self.base_pose_topic_name, Odometry, self.basePoseCallback)
         self.record_mission_service = rospy.Service('record_mission', RecordMission, self.recordMission)
         self.remove_mission_service = rospy.Service('remove_mission', RemoveMission, self.removeMission)
         self.remove_waypoint_service = rospy.Service('remove_waypoint', RemoveWaypoint, self.removeWaypoint)
@@ -105,11 +106,11 @@ class MissionRecorder():
             rospy.logwarn("The waypoint '" + data.mission_name + "/" + data.waypoint_name + "' does not exist.")
             return RemoveWaypointResponse()
 
-    def basePoseCallback(self, pose_stamped_msg):
-        self.base_pose_msg = pose_stamped_msg
+    def basePoseCallback(self, Odometry_msg):
+        self.odometry_msg = Odometry_msg
 
     def recordBasePose(self, data):
-        self.waypointCallback(self.base_pose_msg)
+        self.waypointCallback(self.odometry_msg)
         return RecordBasePoseResponse();
 
     def toggleFileDump(self, data):
