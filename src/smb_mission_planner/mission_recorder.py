@@ -107,10 +107,10 @@ class MissionRecorder():
             return RemoveWaypointResponse()
 
     def basePoseCallback(self, Odometry_msg):
-        self.base_pose_msg = Odometry_msg
+        self.odometry_msg = Odometry_msg
 
     def recordBasePose(self, data):
-        self.waypointCallback(self.base_pose_msg)
+        self.waypointCallback(self.odometry_msg)
         return RecordBasePoseResponse();
 
     def toggleFileDump(self, data):
