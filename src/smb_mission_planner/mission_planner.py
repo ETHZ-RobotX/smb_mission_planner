@@ -12,13 +12,11 @@ import smb_mission_planner.mission_plan
 
 
 class MissionPlanner():
-    def __init__(self, yaml_file_path, waypoint_topic_name, base_pose_topic_name):
+    def __init__(self, yaml_file_path, reference_frame):
         # Read missions data.
         self.yaml_file_path = yaml_file_path
+        self.reference_frame = reference_frame
         self.readMissionsData()
-
-        self.topic_names = {'waypoint': waypoint_topic_name,
-        'base_pose': base_pose_topic_name}
 
         self.main()
 
@@ -31,7 +29,7 @@ class MissionPlanner():
         rospy.loginfo("Mission planner started.")
 
         # Setup state machine.
-        mission_plan = smb_mission_planner.mission_plan.MissionPlan(self.missions_data, self.topic_names)
+        mission_plan = smb_mission_planner.mission_plan.MissionPlan(self.missions_data, self.reference_frame)
         state_machine = mission_plan.createStateMachine()
 
         # Create and start the introspection server.

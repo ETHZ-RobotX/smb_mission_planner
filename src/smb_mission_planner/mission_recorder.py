@@ -11,16 +11,18 @@ from smb_mission_planner.srv import RemoveWaypoint, RemoveWaypointResponse
 from smb_mission_planner.srv import ToggleFileDump, ToggleFileDumpResponse
 from smb_mission_planner.srv import RecordBasePose, RecordBasePoseResponse
 from collections import OrderedDict
-from nav_msgs.msg import Odometry
+from tf.transformations import euler_from_quaternion
+import tf2_ros
 
 def ordered_dict_representer(self, value):  # can be a lambda if that's what you prefer
     return self.represent_mapping('tag:yaml.org,2002:map', value.items())
 yaml.add_representer(OrderedDict, ordered_dict_representer)
 class MissionRecorder():
-    def __init__(self, yaml_file_path, waypoint_topic_name, base_pose_topic_name):
+    def __init__(self, yaml_file_path, waypoint_topic_name, reference_frame, base_frame):
         self.yaml_file_path = yaml_file_path
         self.waypoint_topic_name = waypoint_topic_name
-        self.base_pose_topic_name = base_pose_topic_name
+        self.reference_frame = reference_frame
+        self.base_frame = base_frame
 
         self.current_mission_name = ""
         self.current_waypoint_list = []
@@ -29,7 +31,7 @@ class MissionRecorder():
         self.file_dump_on = True
 
         self.waypoint_pose_subscriber = rospy.Subscriber(self.waypoint_topic_name, PoseStamped, self.waypointCallback)
-        self.base_pose_subscriber = rospy.Subscriber(self.base_pose_topic_name, Odometry, self.basePoseCallback)
+
         self.record_mission_service = rospy.Service('record_mission', RecordMission, self.recordMission)
         self.remove_mission_service = rospy.Service('remove_mission', RemoveMission, self.removeMission)
         self.remove_waypoint_service = rospy.Service('remove_waypoint', RemoveWaypoint, self.removeWaypoint)
@@ -106,12 +108,18 @@ class MissionRecorder():
             rospy.logwarn("The waypoint '" + data.mission_name + "/" + data.waypoint_name + "' does not exist.")
             return RemoveWaypointResponse()
 
-    def basePoseCallback(self, Odometry_msg):
-        self.odometry_msg = Odometry_msg
-
     def recordBasePose(self, data):
-        self.waypointCallback(self.odometry_msg)
-        return RecordBasePoseResponse();
+        try:
+            # Read base pose
+            trans = self.tfBuffer.lookup_transform(self.reference_frame, self.base_frame, rospy.Time())
+            smb_pose = PoseStamped()
+            smb_pose.pose.position = trans.transform.translation
+            smb_pose.pose.orientation = trans.transform.rotation
+            # Save waypoint
+            self.waypointCallback(smb_pose)
+            return RecordBasePoseResponse()
+        except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
+            print("Could not look up Transform")
 
     def toggleFileDump(self, data):
         self.file_dump_on = data.file_dump_on
@@ -131,6 +139,10 @@ class MissionRecorder():
         rospy.init_node('mission_recorder_node')
         rospy.loginfo("Mission recorder ready.")
         rospy.loginfo("Waiting for '/record_mission' services.")
+
+        # Initialize tf listener
+        self.tfBuffer = tf2_ros.Buffer()
+        self.listener = tf2_ros.TransformListener(self.tfBuffer)
 
         # Wait for Ctrl-C to stop the application.
         rospy.spin()

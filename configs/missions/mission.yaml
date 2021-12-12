@@ -1,0 +1,13 @@
+mission:
+  waypoint_1:
+    x_m: 1
+    y_m: 1
+    yaw_rad: 0
+  waypoint_2:
+    x_m: 7.262
+    y_m: 4.971
+    yaw_rad: 0
+  waypoint_3:
+    x_m: 7.919
+    y_m: 3.694
+    yaw_rad: 0

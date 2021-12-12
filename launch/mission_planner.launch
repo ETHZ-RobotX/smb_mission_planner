@@ -1,24 +1,7 @@
 <?xml version="1.0"?>
 <launch>
-  <arg name="config_file_path" default="$(find smb_mission_planner)/configs/my_config.yaml"/>
-  <arg name="waypoint_topic_name" default="/move_base_simple/goal"/>
-  <arg name="base_pose_topic_name" default="/camera/odom/sample "/>
-  <arg name="enable_viewer" default="false"/>
+  <arg name="mission_file_path" default="$(find smb_mission_planner)/configs/missions/mission.yaml" doc="Path to the mission yaml file." />
+  <arg name="reference_frame" default="map" doc="The frame where the waypoints are going to be published." />
 
-  <node pkg="smb_mission_planner"
-        type="mission_planner_node.py"
-        name="mission_planner_node"
-        output="screen"
-        args="$(arg config_file_path) $(arg waypoint_topic_name) $(arg base_pose_topic_name)">
-  </node>
-
-  <group if="$(arg enable_viewer)">
-    <node pkg="smach_viewer"
-      type="smach_viewer.py"
-      name="smach_viewer_node"
-      output="screen"
-      args="">
-    </node>
-  </group>
-
+  <node pkg="smb_mission_planner" type="mission_planner_node.py" name="mission_planner_node" output="screen" args="$(arg mission_file_path) $(arg reference_frame)" />
 </launch>

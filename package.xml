@@ -16,6 +16,8 @@
   <depend>message_runtime</depend>
   <depend>rospy</depend>
   <depend>smach</depend>
-  <depend>smach_ros</depend>
   <depend>std_msgs</depend>
+  <depend>move_base_msgs</depend>
+  <depend>actionlib</depend>
+  <depend>actionlib_msgs</depend>
 </package>
