@@ -1,15 +1,26 @@
 #!/usr/bin/env python
 
-import math
 import rospy
 import yaml
-import tf
-import smach
 import smach_ros
+import smach
 from geometry_msgs.msg import PoseStamped
 from nav_msgs.msg import Odometry
-import smb_mission_planner.mission_plan
+from smb_mission_planner.missions.waypoint_mission import WaypointMission
+from smb_mission_planner.missions.twist_mission import TwistMission
 
+class MissionPlan():
+    def __init__(self, missions_data, reference_frame):
+        self.missions_data = missions_data
+        self.reference_frame = reference_frame
+
+    def createStateMachine(self):
+        state_machine = smach.StateMachine(outcomes=['Success', 'Failure'])
+        with state_machine:
+            smach.StateMachine.add('Twist Mission', TwistMission(self.missions_data['twist_mission'], self.reference_frame),
+                                   transitions={'Completed': 'Success', 'Aborted': 'Failure', 'Next Twist': 'Twist Mission'})
+
+        return state_machine
 
 class MissionPlanner():
     def __init__(self, yaml_file_path, reference_frame):
@@ -29,7 +40,7 @@ class MissionPlanner():
         rospy.loginfo("Mission planner started.")
 
         # Setup state machine.
-        mission_plan = smb_mission_planner.mission_plan.MissionPlan(self.missions_data, self.reference_frame)
+        mission_plan = MissionPlan(self.missions_data, self.reference_frame)
         state_machine = mission_plan.createStateMachine()
 
         # Create and start the introspection server.

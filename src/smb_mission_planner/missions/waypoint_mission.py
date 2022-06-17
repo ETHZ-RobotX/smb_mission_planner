@@ -8,21 +8,7 @@ from actionlib_msgs.msg import GoalStatus
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 
 
-class MissionPlan():
-    def __init__(self, missions_data, reference_frame):
-        self.missions_data = missions_data
-        self.reference_frame = reference_frame
-
-    def createStateMachine(self):
-        state_machine = smach.StateMachine(outcomes=['Success', 'Failure'])
-        with state_machine:
-            smach.StateMachine.add('Mission 1', DefaultMission(self.missions_data['mission'], self.reference_frame),
-                                   transitions={'Completed': 'Success', 'Aborted': 'Failure', 'Next Waypoint': 'Mission 1'})
-
-        return state_machine
-
-
-class DefaultMission(smach.State):
+class WaypointMission(smach.State):
     def __init__(self, mission_data, reference_frame):
         smach.State.__init__(
             self, outcomes=['Completed', 'Aborted', 'Next Waypoint'])
