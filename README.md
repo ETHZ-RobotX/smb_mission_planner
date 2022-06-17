@@ -126,9 +126,9 @@ To add a new mission type with your custom behaviour, see the next subsection be
 
 ### Advanced features
 Add your own mission types (e.g. to trigger a measurement instead of just reaching a waypoint):
-	- Create a new mission class (similar to the `WaypointMission` in a new file).
-	- Don't forget to inherit from `smach.State` and to implement the `__init__` and `execute` methods.
-	- Add your new mission type to the `mission_planner.py` to use it.
+- Create a new mission class (similar to the `WaypointMission` in a new file).
+- Don't forget to inherit from `smach.State` and to implement the `__init__` and `execute` methods.
+- Add your new mission type to the `mission_planner.py` to use it.
 
 
 ## Executing your mission plan
