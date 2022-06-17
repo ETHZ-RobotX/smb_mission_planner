@@ -4,16 +4,13 @@ Because it should be easy to get into the code and modify it, everything is kept
 The mission planner is based on the popular state machine library `smach`, but no prior knowledge is required.
 
 Some terminology to start with:
-In the context of this package, a waypoint denotes a named pose in the global frame.
-A mission is a collection of tasks which are executed sequentially (e.g. a path through several waypoints).
-A mission plan defines the logic how and when different missions are executed.
-The mission plan is implemented as a `smach` state machine.
-Each mission has its own mission data, containing relevant information for the mission (e.g. its waypoints).
+- In the context of this package, a waypoint denotes a named pose in the global frame.
+- A mission is a collection of tasks which are executed sequentially (e.g. a path through several waypoints).
+- A mission plan defines the logic how and when different missions are executed. The mission plan is implemented as a `smach` state machine.
+- Each mission has its own mission data, containing relevant information for the mission (e.g. its waypoints).
 
 ## Installation
-(Could be added to the dependencies at a later stage.)
-
-- Clone this repo into your workspace
+- Clone this repo into your workspace. _If you followed the instructions on how to install the SMB software, the source code of this package is already located in your workspace._
 - Install `smach_ros` from [here](http://wiki.ros.org/smach_ros) (a state machine library written in python with ROS support)
 - Install `yaml` with `pip install pyyaml` 
 - (Buid the package with `catkin build smb_mission_planner`)
@@ -118,7 +115,7 @@ Make sure to assign to each mission its respective mission data, i.e. its record
 Currently, we provide you with a `TwistMission` and `WaypointMission` (see the files in `src/smb_mission_planner/mission`), which implements the following:
 
 - Waypoints are set one by one, in the order they were defined in each mission in the `yaml` config file.
-- If the robot is unable to reach a waypoint, will abort the mission.
+- If the robot is unable to reach a waypoint, it will abort the mission.
 - A waypoint is reached if the xy-position and the yaw-angle are within a certain tolerance.
 - If it cannot find the start of a mission, it will abort it.
 
