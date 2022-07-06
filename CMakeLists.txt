@@ -6,3 +6,7 @@ catkin_python_setup()
 catkin_simple(ALL_DEPS_REQUIRED)
 cs_install()
 cs_export()
+
+catkin_install_python(PROGRAMS scripts/quaternion_to_euler_node.py
+  DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
