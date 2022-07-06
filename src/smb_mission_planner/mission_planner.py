@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import rospy
 import yaml
@@ -17,10 +17,11 @@ class MissionPlan():
     def createStateMachine(self):
         state_machine = smach.StateMachine(outcomes=['Success', 'Failure'])
         with state_machine:
-            #smach.StateMachine.add('Waypoint Mission', WaypointMission(self.missions_data['waypoint_mission'], self.reference_frame),
-            #                       transitions={'Completed': 'Twist Mission', 'Aborted': 'Failure', 'Next Waypoint': 'Waypoint Mission'})
-            smach.StateMachine.add('Twist Mission', TwistMission(self.missions_data['twist_mission'], self.reference_frame),
-                                   transitions={'Completed': 'Success', 'Aborted': 'Failure', 'Next Twist': 'Twist Mission'})
+            smach.StateMachine.add('Waypoint Mission', WaypointMission(self.missions_data['trial'], self.reference_frame),
+                                   transitions={'Completed': 'Success', 'Aborted': 'Failure', 'Next Waypoint': 'Waypoint Mission'})
+                                  # transitions={'Completed': 'Twist Mission', 'Aborted': 'Failure', 'Next Waypoint': 'Waypoint Mission'})
+            #smach.StateMachine.add('Twist Mission', TwistMission(self.missions_data['twist_mission'], self.reference_frame),
+            #                       transitions={'Completed': 'Success', 'Aborted': 'Failure', 'Next Twist': 'Twist Mission'})
         return state_machine
 
 class MissionPlanner():
