@@ -2,7 +2,6 @@
 import smach
 import rospy
 import tf
-import smach
 import actionlib
 from actionlib_msgs.msg import GoalStatus
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
