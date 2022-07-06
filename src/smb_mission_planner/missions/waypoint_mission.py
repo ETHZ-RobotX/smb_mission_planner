@@ -54,10 +54,16 @@ class WaypointMission(smach.State):
             self.waypoint_idx += 1
             return 'Next Waypoint'
         else:
-            rospy.logwarn(
-                "Waypoint of mission unreachable. Aborting current mission.")
-            self.waypoint_idx = 0.
-            return 'Aborted'
+            self.waypoint_idx += 1
+            if(self.waypoint_idx >= len(self.mission_data.keys())):
+                rospy.logwarn(
+                    "Waypoint of mission unreachable. Aborting current mission.")
+                self.waypoint_idx = 0.
+                return 'Aborted'
+            else:
+                rospy.loginfo("Waypoint '" + self.waypoint_name +
+                    "' failed. Continuing to next waypoint...")
+                return 'Next Waypoint'
 
     def active_cb(self):
         rospy.loginfo(self.waypoint_name +
