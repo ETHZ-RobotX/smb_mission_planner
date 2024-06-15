@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import argparse
 from smb_mission_planner.mission_recorder import MissionRecorder
