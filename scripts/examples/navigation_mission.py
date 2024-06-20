@@ -37,7 +37,7 @@ with state_machine:
                                         'Aborted': 'GATHER_VEGETABLES',
                                         'Next Waypoint': 'GATHER_FRUITS'})
 
-    smach.StateMachine.add('GATHER_VEGETABLES', WaypointNavigation(modometry_topicission_data['gather_vegetables'],
+    smach.StateMachine.add('GATHER_VEGETABLES', WaypointNavigation(mission_data['gather_vegetables'],
                                                                    waypoint_pose_topic=move_base_topic,
                                                                    base_pose_topic=odometry_topic,
                                                                    ns="GATHER_VEGETABLES"),
