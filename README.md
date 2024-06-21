@@ -161,8 +161,8 @@ Make sure to assign to each mission its respective mission data, i.e. its record
 Currently, we provide you with a `TwistMission` and `WaypointMission` (see the files in `src/smb_mission_planner/mission`), which implement the following:
 
 - Waypoints are set one by one, in the order they were defined in each mission in the `yaml` config file.
-- If the robot is unable to reach a waypoint, it will abort the mission.
-- A waypoint is reached if the xy-position and the yaw-angle are within a certain tolerance.
+- If the robot is unable to reach a waypoint (not reaching waypoint in max_time_out), it will abort the mission.
+- A waypoint is reached if the xy-position is within a certain tolerance.
 - If it cannot find the start of a mission, it will abort it.
 
 To add a new mission type with your custom behavior, see the next subsection below.
