@@ -6,7 +6,7 @@ import smach_ros
 import smach
 from geometry_msgs.msg import PoseStamped
 from nav_msgs.msg import Odometry
-from smb_mission_planner.missions.waypoint_mission import WaypointMission
+from smb_mission_planner.missions.far_waypoint_mission import FARWaypointMission
 from smb_mission_planner.missions.twist_mission import TwistMission
 
 class MissionPlan():
@@ -17,7 +17,7 @@ class MissionPlan():
     def createStateMachine(self):
         state_machine = smach.StateMachine(outcomes=['Success', 'Failure'])
         with state_machine:
-            smach.StateMachine.add('Waypoint Mission', WaypointMission(self.missions_data['waypoint_mission'], self.reference_frame),
+            smach.StateMachine.add('Waypoint Mission', FARWaypointMission(self.missions_data['waypoint_mission'], self.reference_frame),
                                    transitions={'Completed': 'Twist Mission', 'Aborted': 'Failure', 'Next Waypoint': 'Waypoint Mission'})
             smach.StateMachine.add('Twist Mission', TwistMission(self.missions_data['twist_mission'], self.reference_frame),
                                    transitions={'Completed': 'Success', 'Aborted': 'Failure', 'Next Twist': 'Twist Mission'})

@@ -37,6 +37,9 @@ To add or remove this mission, please modify the file `src/smb_mission_planner/m
 
 ```python
 # Add waypoint mission
+smach.StateMachine.add('Waypoint Mission', FARWaypointMission(self.missions_data['waypoint_mission'], self.reference_frame), transitions={'Completed': 'Twist Mission', 'Aborted': 'Failure', 'Next Waypoint': 'Waypoint Mission'})
+
+# Add waypoint mission (using legacy navigation)
 smach.StateMachine.add('Waypoint Mission', WaypointMission(self.missions_data['waypoint_mission'], self.reference_frame), transitions={'Completed': 'Twist Mission', 'Aborted': 'Failure', 'Next Waypoint': 'Waypoint Mission'})
 
 # Add twist mission
@@ -53,18 +56,6 @@ The function takes the arguments:
 You can use a `roslaunch` argument to specify a file path for the input file, e.g.
 ```
 roslaunch smb_mission_planner mission_planner.launch mission_file_name:=mission_name.yaml
-```
-
-#### Choose your goal topic
-You can use a `roslaunch` argument to specify the waypoints' pose topic:
-```
-roslaunch smb_mission_planner mission_planner.launch waypoint_topic_name:=/move_base_simple/goal
-```
-
-#### Choose your odometry topic
-You can use a `roslaunch` argument to specify the base's pose topic:
-```
-roslaunch smb_mission_planner mission_planner.launch base_frame:=base_link reference_frame:=map
 ```
 
 ## Constructing a State Machine  <a name="headers"> </a>
@@ -104,7 +95,6 @@ This can be done
 
 - in `rviz` by clicking `2D Nav Goal` and visually placing the pose on your map.
 - by sending the desired pose in the topic `/move_base_simple/goal`.
-- in `rviz` by sending a goal with the `smb_path_planner` widget.
 - by calling the service `rosservice call /record_base_pose`, which will record the current base pose as a waypoint. Make sure that the odometry topic for the base pose is set correctly (see *Advanced Features* on how to do that).
 
 After having recorded all your missions, stop the node with `Ctrl-C`.
@@ -165,22 +155,22 @@ Make sure to assign to each mission its respective mission data, i.e. its record
 Currently, we provide you with a `TwistMission` and `WaypointMission` (see the files in `src/smb_mission_planner/mission`), which implement the following:
 
 - Waypoints are set one by one, in the order they were defined in each mission in the `yaml` config file.
-- If the robot is unable to reach a waypoint, it will abort the mission.
-- A waypoint is reached if the xy-position and the yaw-angle are within a certain tolerance.
+- If the robot is unable to reach a waypoint (not reaching waypoint in max_time_out), it will abort the mission.
+- A waypoint is reached if the xy-position is within a certain tolerance.
 - If it cannot find the start of a mission, it will abort it.
 
 To add a new mission type with your custom behavior, see the next subsection below.
 
 ### Advanced features
 Add your mission types (e.g. to trigger a measurement instead of just reaching a waypoint):
-- Create a new mission class (similar to the `WaypointMission` in a new file).
+- Create a new mission class (similar to the `FARWaypointMission` in a new file).
 - Don't forget to inherit from `smach.State` and to implement the `__init__` and `execute` methods.
 - Add your new mission type to the `mission_planner.py` to use it.
 
 
 ## Where to go from here
 - Try to record and execute a mission plan
-- Modify the mission plan in the `mission_planner.py` file, by adding e.g. more mission states of the `WaypointMission` to the state machine.
+- Modify the mission plan in the `mission_planner.py` file, by adding e.g. more mission states of the `FARWaypointMission` to the state machine.
 - Add your mission types, e.g. to trigger a measurement instead of just reaching a waypoint.
 
 
