@@ -58,12 +58,6 @@ You can use a `roslaunch` argument to specify a file path for the input file, e.
 roslaunch smb_mission_planner mission_planner.launch mission_file_name:=mission_name.yaml
 ```
 
-#### Choose your odometry topic
-You can use a `roslaunch` argument to specify the base's pose topic:
-```
-roslaunch smb_mission_planner mission_planner.launch base_frame:=base_link reference_frame:=map
-```
-
 ## Constructing a State Machine  <a name="headers"> </a>
 A mission plan (state machine) defines the connections (transitions) between different states. 
 The mission plan is implemented as a `smach` state machine.
