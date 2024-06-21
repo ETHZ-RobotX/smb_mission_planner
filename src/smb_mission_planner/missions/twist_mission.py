@@ -25,6 +25,8 @@ class TwistMission(smach.State):
 
         self.update_rate = rospy.Rate(10)
         self.twist_pub = rospy.Publisher('/control/keyboard_teleop/cmd_vel', Twist, queue_size=1)
+        while(self.twist_pub.get_num_connections() < 1):
+            self.update_rate.sleep()
         
 
     def execute(self, userdata):
